@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>My Brave Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app">
+        <main class="container">
+            <form id="searchForm" action="https://www.google.com/search" method="get" class="search" role="search">
+                <div class="search-input">
+                    <span class="material-icons search-icon">search</span>
+                    <input name="q" id="q" type="search" placeholder="Search Google or type a URL" autocomplete="off"
+                        required>
+                </div>
+                <button type="submit" class="btn primary">Search</button>
+            </form>
+
+            <section class="grid">
+                <div class="card clock-card" id="clock">
+                    <div class="card-title">Clock</div>
+                    <div class="card-body">
+                        <div class="clock-time" id="clockTime">--:--:--</div>
+                        <div class="clock-date" id="clockDate">Loading date…</div>
+                    </div>
+                </div>
+
+                <div class="card weather-card" id="weather">
+                    <div class="card-title">Weather</div>
+                    <div class="card-body">
+                        <div class="weather-content">
+                            <div class="weather-icon" id="weatherIcon">☁️</div>
+                            <div class="weather-info">
+                                <div class="temp" id="weatherTemp">--°C</div>
+                                <div class="cond" id="weatherCond">Loading…</div>
+                                <div class="loc" id="weatherLoc"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card pinned-card">
+                    <div class="card-title">Pinned</div>
+                    <div class="card-body">
+                        <a class="github-card" href="https://github.com/faizanfatmi" target="_blank"
+                            rel="noopener noreferrer">
+                            <img src="https://github.com/faizanfatmi.png" alt="faizanfatmi avatar">
+                            <div class="info">
+                                <div class="name">faizanfatmi</div>
+                                <div class="meta">GitHub profile</div>
+                            </div>
+                            <span class="material-icons chevron">open_in_new</span>
+                        </a>
+                    </div>
+                </div>
+
+            </section>
+
+            <footer class="help">
+                Tip: Press <kbd>/</kbd> to focus the search box. Use the home button to open this page.
+            </footer>
+        </main>
+
+        <!-- Ghost bot that follows cursor -->
+        <div id="ghostBot" class="ghost-bot" aria-hidden="true">
+            <div class="ghost-umbrella">
+                <div class="umbrella-canopy"></div>
+                <div class="umbrella-handle"></div>
+            </div>
+            <div class="ghost-bot-head">
+                <div class="ghost-bot-face">
+                    <div class="ghost-eye left">
+                        <div class="ghost-pupil"></div>
+                    </div>
+                    <div class="ghost-eye right">
+                        <div class="ghost-pupil"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
