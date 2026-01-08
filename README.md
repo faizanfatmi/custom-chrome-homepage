@@ -12,6 +12,18 @@ A fun, modern Brave browser homepage with a playful ghost bot, real-time widgets
 - **Design**: Clean, responsive UI with frosted glass effects and smooth animations.  
 - **Lightweight**: Pure HTML, CSS, and vanilla JavaScript—no dependencies.      
 
+## 📜 License
+
+This project is licensed under the **[GNU General Public License v3.0](LICENSE)**
+
+```
+Copyright (C) 2026 faizanfatmi
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+```
 ---
 
 **Made with ❤️ to make browsing delightful.**  
