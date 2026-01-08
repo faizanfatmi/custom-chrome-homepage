@@ -21,13 +21,17 @@
     }
   });
 
-  // Clock
+  // Clock - 12 hour format
   function updateClock() {
     const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
+    let hours = now.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    const hh = String(hours).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     const ss = String(now.getSeconds()).padStart(2, '0');
-    clockTime && (clockTime.textContent = `${hh}:${mm}:${ss}`);
+    clockTime && (clockTime.textContent = `${hh}:${mm}:${ss} ${ampm}`);
     const opts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
     clockDate && (clockDate.textContent = now.toLocaleDateString(undefined, opts));
   }
@@ -46,6 +50,12 @@
     return '☁️';
   }
 
+  function isRainyWeather(code) {
+    if (code == null) return false;
+    // Weather codes for rain: 51-67 (drizzle to heavy rain), 80-99 (showers to thunderstorms)
+    return (code >= 51 && code <= 67) || (code >= 80 && code <= 99);
+  }
+
   async function fetchWeather(lat, lon) {
     try {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
@@ -61,6 +71,16 @@
       weatherCond && (weatherCond.textContent = `Winds ${Math.round(cw.windspeed)} km/h`);
       weatherIcon && (weatherIcon.textContent = weatherCodeToIcon(code));
       weatherLoc && (weatherLoc.textContent = `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`);
+      
+      // Update bot weather state
+      const ghostBot = document.getElementById('ghostBot');
+      if (ghostBot) {
+        if (isRainyWeather(code)) {
+          ghostBot.classList.add('ghost-bot--rainy');
+        } else {
+          ghostBot.classList.remove('ghost-bot--rainy');
+        }
+      }
     } catch (err) {
       weatherCond && (weatherCond.textContent = 'Unable to load weather');
       weatherTemp && (weatherTemp.textContent = '--°C');
@@ -85,6 +105,11 @@
 
   // init
   getAndFetchWeather();
+  
+  // Check weather periodically and update bot state
+  setInterval(() => {
+    getAndFetchWeather();
+  }, 300000); // Check every 5 minutes
 
   // Ghost bot that follows cursor
   const ghostBot = document.getElementById('ghostBot');
@@ -96,7 +121,12 @@
     let isVisible = false;
     let isFollowing = true;
     let isFalling = false;
+    let isAtBottom = false;
     let lastClickTime = 0;
+    
+    const leftPupil = ghostBot.querySelector('.ghost-eye.left .ghost-pupil');
+    const rightPupil = ghostBot.querySelector('.ghost-eye.right .ghost-pupil');
+    const ghostHead = ghostBot.querySelector('.ghost-bot-head');
 
     function updateGhostBot(e) {
       if (!isFollowing || isFalling) return;
@@ -106,6 +136,23 @@
         isVisible = true;
         ghostBot.style.opacity = '1';
       }
+    }
+    
+    function updatePupils(clientX, clientY) {
+      if (!ghostHead || !leftPupil || !rightPupil) return;
+      const rect = ghostHead.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+      const maxDist = 100;
+      const dist = Math.hypot(dx, dy);
+      const ratio = Math.min(dist / maxDist, 1);
+      const nx = (dx / (dist || 1)) * ratio * 1.5; // max 1.5px horizontally
+      const ny = (dy / (dist || 1)) * ratio * 1.5; // max 1.5px vertically
+      const t = `translate(${nx}px, ${ny}px)`;
+      leftPupil.style.transform = t;
+      rightPupil.style.transform = t;
     }
 
     function animateGhostBot() {
@@ -122,6 +169,7 @@
         // Check if reached bottom (near bottom of viewport)
         if (ghostY > window.innerHeight - 50) {
           isFalling = false;
+          isAtBottom = true;
           ghostY = window.innerHeight - 50;
           ghostBot.classList.remove('ghost-bot--fear');
           ghostBot.classList.remove('ghost-bot--falling');
@@ -134,6 +182,14 @@
       
       requestAnimationFrame(animateGhostBot);
     }
+    
+    // Update pupils to follow cursor when at bottom
+    window.addEventListener('mousemove', (e) => {
+      updateGhostBot(e);
+      if (isAtBottom && !isFalling) {
+        updatePupils(e.clientX, e.clientY);
+      }
+    });
 
     // Double-click handler
     ghostBot.addEventListener('dblclick', (e) => {
@@ -147,10 +203,14 @@
         // Resume following cursor
         isFollowing = true;
         isFalling = false;
+        isAtBottom = false;
         ghostBot.classList.remove('ghost-bot--fear');
         ghostBot.classList.remove('ghost-bot--falling');
         targetX = e.clientX;
         targetY = e.clientY;
+        // Reset pupils
+        if (leftPupil) leftPupil.style.transform = 'translate(0,0)';
+        if (rightPupil) rightPupil.style.transform = 'translate(0,0)';
       } else if (!isFalling) {
         // Start fear effect and fall down
         isFollowing = false;
@@ -162,12 +222,14 @@
       lastClickTime = now;
     });
 
-    window.addEventListener('mousemove', updateGhostBot);
     window.addEventListener('mouseleave', () => {
       if (isFollowing) {
         isVisible = false;
         ghostBot.style.opacity = '0';
       }
+      // Reset pupils when mouse leaves
+      if (leftPupil) leftPupil.style.transform = 'translate(0,0)';
+      if (rightPupil) rightPupil.style.transform = 'translate(0,0)';
     });
 
     // Start animation loop
