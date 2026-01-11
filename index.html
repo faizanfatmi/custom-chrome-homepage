@@ -11,18 +11,63 @@
 </head>
 
 <body>
+    <!-- Top bar with Gmail and Settings -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <a href="https://mail.google.com" target="_blank" class="gmail-btn" title="Gmail">
+                <span class="material-icons">mail</span>
+            </a>
+        </div>
+        <div class="top-bar-right">
+            <div class="fullscreen-info" id="fullscreenInfo" style="display: none;">
+                <span class="network-speed" id="networkSpeed">--</span>
+                <span class="battery-status" id="batteryStatus">--</span>
+            </div>
+            <button class="settings-btn icon-btn" id="settingsBtn" title="Settings">
+                <span class="material-icons">settings</span>
+            </button>
+        </div>
+    </div>
+
     <div class="app">
         <main class="container">
             <form id="searchForm" action="https://www.google.com/search" method="get" class="search" role="search">
-                <div class="search-input">
-                    <span class="material-icons search-icon">search</span>
-                    <input name="q" id="q" type="search" placeholder="Search Google or type a URL" autocomplete="off"
-                        required>
+                <div class="search-input-wrapper">
+                    <div class="search-input">
+                        <span class="material-icons search-icon">search</span>
+                        <input name="q" id="q" type="search" placeholder="Search or type a URL" autocomplete="off"
+                            required>
+                        <div class="search-suggestions" id="searchSuggestions"></div>
+                    </div>
+                    <select class="search-engine-select" id="searchEngine">
+                        <option value="google">Google</option>
+                        <option value="duckduckgo">DuckDuckGo</option>
+                        <option value="bing">Bing</option>
+                        <option value="yahoo">Yahoo</option>
+                        <option value="brave">Brave</option>
+                    </select>
                 </div>
                 <button type="submit" class="btn primary">Search</button>
             </form>
 
-            <section class="grid">
+            <!-- Pinned Items Bar -->
+            <section class="pinned-bar" id="pinnedBar" style="display: none;">
+                <div class="pinned-bar-header">
+                    <span class="pinned-title">Pinned</span>
+                </div>
+                <div class="pinned-items" id="pinnedItems"></div>
+            </section>
+
+            <!-- Recent/Pinned Items Bar -->
+
+            <section class="recent-bar" id="recentBar">
+                <div class="recent-bar-header">
+                    <span class="recent-title">Recent & Pinned</span>
+                </div>
+                <div class="recent-items" id="recentItems"></div>
+            </section>
+
+            <section class="grid" id="shortcutsGrid">
                 <div class="card clock-card" id="clock">
                     <div class="card-title">Clock</div>
                     <div class="card-body">
@@ -45,18 +90,11 @@
                     </div>
                 </div>
 
-                <div class="card pinned-card">
-                    <div class="card-title">Pinned</div>
-                    <div class="card-body">
-                        <a class="github-card" href="https://github.com/faizanfatmi" target="_blank"
-                            rel="noopener noreferrer">
-                            <img src="https://github.com/faizanfatmi.png" alt="faizanfatmi avatar">
-                            <div class="info">
-                                <div class="name">faizanfatmi</div>
-                                <div class="meta">GitHub profile</div>
-                            </div>
-                            <span class="material-icons chevron">open_in_new</span>
-                        </a>
+                <!-- Dynamic shortcuts will be added here -->
+                <div class="card add-shortcut-card" id="addShortcutBtn">
+                    <div class="card-body add-shortcut-body">
+                        <span class="material-icons add-icon">add</span>
+                        <span class="add-text">Add Shortcut</span>
                     </div>
                 </div>
 
@@ -97,6 +135,203 @@
             </div>
         </div>
     </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="modal-close" id="closeSettings">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label class="setting-label">Theme</label>
+                    <div class="theme-options">
+                        <button class="theme-btn" data-theme="dark">Dark</button>
+                        <button class="theme-btn" data-theme="light">Light</button>
+                        <button class="theme-btn" data-theme="colorful">Colorful</button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Background Opacity</label>
+                    <div class="slider-container">
+                        <input type="range" id="opacitySlider" min="0" max="100" value="100" class="slider">
+                        <span class="slider-value" id="opacityValue">100%</span>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Blur Intensity</label>
+                    <div class="slider-container">
+                        <input type="range" id="blurSlider" min="0" max="50" value="22" class="slider">
+                        <span class="slider-value" id="blurValue">22px</span>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Card Size</label>
+                    <div class="slider-container">
+                        <input type="range" id="cardSizeSlider" min="80" max="160" value="100" class="slider">
+                        <span class="slider-value" id="cardSizeValue">100%</span>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Customize Colors</label>
+                    <button class="btn secondary" id="toggleColorCustomization">Show Color Options</button>
+                </div>
+
+                <div class="setting-group color-customization-panel" id="colorCustomizationPanel"
+                    style="display: none;">
+                    <div class="color-grid">
+                        <div class="color-picker-item">
+                            <label>Primary Background</label>
+                            <input type="color" id="colorPrimaryBg" value="#114b5f">
+                        </div>
+                        <div class="color-picker-item">
+                            <label>Secondary Background</label>
+                            <input type="color" id="colorSecondaryBg" value="#028090">
+                        </div>
+                        <div class="color-picker-item">
+                            <label>Card Background</label>
+                            <input type="color" id="colorCardBg" value="#114b5f">
+                        </div>
+                        <div class="color-picker-item">
+                            <label>Primary Text</label>
+                            <input type="color" id="colorPrimaryText" value="#e4fde1">
+                        </div>
+                        <div class="color-picker-item">
+                            <label>Secondary Text</label>
+                            <input type="color" id="colorSecondaryText" value="#456990">
+                        </div>
+                        <div class="color-picker-item">
+                            <label>Accent/Border</label>
+                            <input type="color" id="colorAccent" value="#028090">
+                        </div>
+                        <div class="color-picker-item">
+                            <label>Button Primary</label>
+                            <input type="color" id="colorButtonPrimary" value="#028090">
+                        </div>
+                        <div class="color-picker-item">
+                            <label>Button Secondary</label>
+                            <input type="color" id="colorButtonSecondary" value="#456990">
+                        </div>
+                        <div class="color-picker-item">
+                            <label>Card Hover Bg</label>
+                            <input type="color" id="colorCardHoverBg" value="#114b5f">
+                        </div>
+                        <div class="color-picker-item">
+                            <label>Card Hover Border</label>
+                            <input type="color" id="colorCardHoverBorder" value="#028090">
+                        </div>
+                    </div>
+                    <div class="color-presets">
+                        <button class="preset-btn" data-preset="default">Default</button>
+                        <button class="preset-btn" data-preset="warm">Warm</button>
+                        <button class="preset-btn" data-preset="cool">Cool</button>
+                        <button class="preset-btn" data-preset="dark">Dark</button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Wallpaper</label>
+                    <div class="wallpaper-controls"
+                        style="display: flex; gap: 10px; flex-direction: column; width: 100%;">
+                        <input type="text" id="wallpaperUrlInput" placeholder="Image URL..."
+                            style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--surface); color: var(--text);">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label for="wallpaperUpload" class="btn secondary"
+                                style="cursor: pointer; flex: 1; text-align: center;">
+                                Upload Image
+                                <input type="file" id="wallpaperUpload" accept="image/*" style="display: none;">
+                            </label>
+                            <button id="clearWallpaper" class="btn"
+                                style="background: var(--danger); color: white;">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label toggle-label">
+                        <span>Sync with Wallpaper (Overrides Custom)</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="wallpaperSync">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </label>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label toggle-label">
+                        <span>Full Screen Mode</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="fullScreenMode">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Add Shortcut Modal -->
+    <div class="modal-overlay" id="addShortcutModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Website Shortcut</h2>
+                <button class="modal-close" id="closeShortcutModal">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Website Name</label>
+                    <input type="text" id="shortcutName" placeholder="e.g., YouTube">
+                </div>
+                <div class="form-group">
+                    <label>Website URL</label>
+                    <input type="url" id="shortcutUrl" placeholder="https://www.youtube.com">
+                </div>
+                <div class="form-group">
+                    <label>Icon URL (optional)</label>
+                    <input type="url" id="shortcutIcon" placeholder="https://www.youtube.com/favicon.ico">
+                </div>
+                <button class="btn primary" id="saveShortcut">Add Shortcut</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Pin Modal -->
+    <div class="modal-overlay" id="customPinModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Customize Pin</h2>
+                <button class="modal-close" id="closeCustomPinModal">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Label</label>
+                    <input type="text" id="pinLabel" placeholder="Custom label">
+                </div>
+                <div class="form-group">
+                    <label>Icon Color</label>
+                    <input type="color" id="pinIconColor" value="#028090">
+                </div>
+                <div class="form-group">
+                    <label>Background Color</label>
+                    <input type="color" id="pinBgColor" value="#114b5f">
+                </div>
+                <button class="btn primary" id="saveCustomPin">Save Pin</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 
