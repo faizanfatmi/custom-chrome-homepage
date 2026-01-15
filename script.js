@@ -25,6 +25,7 @@
   const wallpaperSync = document.getElementById('wallpaperSync');
   const fullScreenMode = document.getElementById('fullScreenMode');
   const fullscreenInfo = document.getElementById('fullscreenInfo');
+  const ghostBotClickThrough = document.getElementById('ghostBotClickThrough');
   const networkSpeed = document.getElementById('networkSpeed');
   const batteryStatus = document.getElementById('batteryStatus');
   const recentItems = document.getElementById('recentItems');
@@ -56,6 +57,7 @@
     searchEngine: 'google',
     shortcuts: [],
     cardSize: 100,
+    ghostBotClickThrough: false,
     customColors: null
   };
 
@@ -102,6 +104,17 @@
       if (fullscreenInfo) fullscreenInfo.style.display = 'flex';
       updateBatteryStatus();
       updateNetworkSpeed();
+    }
+
+    // Apply ghost bot click through
+    if (ghostBotClickThrough) ghostBotClickThrough.checked = settings.ghostBotClickThrough;
+    const ghostBot = document.getElementById('ghostBot');
+    if (ghostBot) {
+      if (settings.ghostBotClickThrough) {
+        ghostBot.classList.add('click-through-enabled');
+      } else {
+        ghostBot.classList.remove('click-through-enabled');
+      }
     }
 
     // Apply search engine
@@ -632,6 +645,22 @@
     } else {
       document.body.classList.remove('fullscreen');
       if (fullscreenInfo) fullscreenInfo.style.display = 'none';
+    }
+  });
+
+  // Ghost bot click through
+  ghostBotClickThrough && ghostBotClickThrough.addEventListener('change', (e) => {
+    const settings = getSettings();
+    settings.ghostBotClickThrough = e.target.checked;
+    saveSettings(settings);
+
+    const ghostBot = document.getElementById('ghostBot');
+    if (ghostBot) {
+      if (e.target.checked) {
+        ghostBot.classList.add('click-through-enabled');
+      } else {
+        ghostBot.classList.remove('click-through-enabled');
+      }
     }
   });
 

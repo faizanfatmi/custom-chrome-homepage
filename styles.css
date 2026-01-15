@@ -361,6 +361,10 @@ body::before {
 	transform: translate(-50%, -50%);
 }
 
+.ghost-bot.click-through-enabled {
+	pointer-events: none !important;
+}
+
 .ghost-bot-head {
 	width: 100%;
 	height: 100%;
