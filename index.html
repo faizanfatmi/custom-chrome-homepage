@@ -274,18 +274,47 @@
                     </label>
                 </div>
 
-                <div class="setting-group">
-                    <label class="setting-label toggle-label">
-                        <span>Ghost Bot Click Through</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="ghostBotClickThrough">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </label>
-                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="ghostBotClickThrough">
+                    <span class="toggle-slider"></span>
+                </label>
+                </label>
             </div>
 
+            <div class="setting-group">
+                <label class="setting-label toggle-label">
+                    <span>Show Recent Bar</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showRecentBar" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </label>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label toggle-label">
+                    <span>Compact Pinned Items</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="pinnedItemsCompact">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </label>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">Weather Location</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="detectLocationBtn" class="btn secondary" style="flex: 1;">
+                        <span class="material-icons"
+                            style="font-size: 16px; vertical-align: middle; margin-right: 4px;">my_location</span>
+                        Detect My Location
+                    </button>
+                    <span id="locationStatus" style="font-size: 12px; color: var(--text-soft);">Default</span>
+                </div>
+            </div>
         </div>
+
+    </div>
     </div>
 
     <!-- Add Shortcut Modal -->

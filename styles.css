@@ -1251,18 +1251,22 @@ body.theme-light {
 	--text-soft: rgba(30, 41, 59, 0.7);
 	--shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.15);
 }
+
 body.theme-light .card {
 	background: #ffffff !important;
 	border: 1px solid rgba(0, 0, 0, 0.1);
 }
+
 body.theme-light .search-input {
 	background: #ffffff !important;
 	border: 2px solid rgba(0, 0, 0, 0.1);
 }
+
 body.theme-light .top-bar {
 	background: rgba(255, 255, 255, 0.95);
 	border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
+
 body.theme-light .recent-bar,
 body.theme-light .modal-content {
 	background: #ffffff !important;
@@ -1550,6 +1554,29 @@ body.fullscreen .container {
 .pinned-item-btn.unpin:hover {
 	background: var(--danger);
 	color: white;
+}
+
+/* Compact Pinned Items */
+.pinned-items.compact {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+	gap: 10px;
+}
+
+.pinned-items.compact .pinned-item {
+	flex-direction: column;
+	justify-content: center;
+	padding: 8px;
+	height: 50px;
+	text-align: center;
+}
+
+.pinned-items.compact .pinned-item span:not(.material-icons) {
+	display: none;
+}
+
+.pinned-items.compact .pinned-item-actions {
+	display: none !important;
 }
 
 .recent-item-pin {

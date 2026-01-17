@@ -58,7 +58,10 @@
     shortcuts: [],
     cardSize: 100,
     ghostBotClickThrough: false,
-    customColors: null
+    customColors: null,
+    showRecentBar: true,
+    pinnedItemsCompact: false,
+    weatherLocation: null
   };
 
   function getSettings() {
@@ -136,6 +139,33 @@
     if (settings.shortcuts && settings.shortcuts.length > 0) {
       shortcuts = settings.shortcuts;
       renderShortcuts();
+    }
+
+    // Apply recent bar visibility
+    const recentBar = document.getElementById('recentBar');
+    if (recentBar) {
+      recentBar.style.display = settings.showRecentBar ? 'block' : 'none';
+    }
+    const showRecentBarCheckbox = document.getElementById('showRecentBar');
+    if (showRecentBarCheckbox) showRecentBarCheckbox.checked = settings.showRecentBar;
+
+    // Apply compact pinned items
+    const pinnedItemsCompactCheckbox = document.getElementById('pinnedItemsCompact');
+    if (pinnedItemsCompactCheckbox) pinnedItemsCompactCheckbox.checked = settings.pinnedItemsCompact;
+    if (pinnedItems) {
+      pinnedItems.classList.toggle('compact', settings.pinnedItemsCompact);
+    }
+
+    // Apply saved location status
+    const locationStatus = document.getElementById('locationStatus');
+    if (locationStatus) {
+      if (settings.weatherLocation) {
+        locationStatus.textContent = 'Location Saved';
+        locationStatus.style.color = 'var(--success)';
+      } else {
+        locationStatus.textContent = 'Using Default (Karachi)';
+        locationStatus.style.color = 'var(--text-soft)';
+      }
     }
 
     // Load recent history
@@ -314,21 +344,60 @@
   }
 
   function getAndFetchWeather() {
-    if (!navigator.geolocation) {
+    const settings = getSettings();
+    if (settings.weatherLocation) {
+      fetchWeather(settings.weatherLocation.lat, settings.weatherLocation.lon);
+    } else {
+      // Default fallback (Karachi) - DO NOT ASK FOR PERMISSION AUTOMATICALLY
       fetchWeather(24.86, 67.01);
-      return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
-      () => fetchWeather(24.86, 67.01),
-      { timeout: 5000 }
-    );
   }
 
   getAndFetchWeather();
   setInterval(() => {
     getAndFetchWeather();
   }, 300000);
+
+  // Detect Location Button Logic
+  const detectLocationBtn = document.getElementById('detectLocationBtn');
+  if (detectLocationBtn) {
+    detectLocationBtn.addEventListener('click', () => {
+      const locationStatus = document.getElementById('locationStatus');
+      if (locationStatus) locationStatus.textContent = 'Detecting...';
+
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+
+          const settings = getSettings();
+          settings.weatherLocation = { lat, lon };
+          saveSettings(settings);
+
+          fetchWeather(lat, lon);
+
+          if (locationStatus) {
+            locationStatus.textContent = 'Location Saved';
+            locationStatus.style.color = 'var(--success)';
+          }
+        },
+        (err) => {
+          console.warn('Location detection failed', err);
+          if (locationStatus) {
+            locationStatus.textContent = 'Failed to detect';
+            locationStatus.style.color = 'var(--danger)';
+          }
+          alert('Could not detect location. Please check browser permissions.');
+        },
+        { timeout: 10000 }
+      );
+    });
+  }
 
   // Search suggestions
   const commonSearches = [
@@ -663,6 +732,36 @@
       }
     }
   });
+
+  // Show Recent Bar Toggle
+  const showRecentBarCheckbox = document.getElementById('showRecentBar');
+  if (showRecentBarCheckbox) {
+    showRecentBarCheckbox.addEventListener('change', (e) => {
+      const settings = getSettings();
+      settings.showRecentBar = e.target.checked;
+      saveSettings(settings); // Saving logic
+
+      const recentBar = document.getElementById('recentBar');
+      if (recentBar) {
+        recentBar.style.display = e.target.checked ? 'block' : 'none';
+      }
+    });
+  }
+
+  // Compact Pinned Items Toggle
+  const pinnedItemsCompactCheckbox = document.getElementById('pinnedItemsCompact');
+  if (pinnedItemsCompactCheckbox) {
+    pinnedItemsCompactCheckbox.addEventListener('change', (e) => {
+      const settings = getSettings();
+      settings.pinnedItemsCompact = e.target.checked;
+      saveSettings(settings);
+
+      const pinnedItems = document.getElementById('pinnedItems');
+      if (pinnedItems) {
+        pinnedItems.classList.toggle('compact', e.target.checked);
+      }
+    });
+  }
 
   // Battery status
   function updateBatteryStatus() {
