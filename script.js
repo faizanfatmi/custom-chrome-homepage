@@ -61,7 +61,11 @@
     customColors: null,
     showRecentBar: true,
     pinnedItemsCompact: false,
-    weatherLocation: null
+    weatherLocation: null,
+    recentBarCollapsed: false,
+    liveWallpaper: 'none',
+    userName: '',
+    ghostBotSize: 30
   };
 
   function getSettings() {
@@ -120,6 +124,14 @@
       }
     }
 
+    // Apply ghost bot size
+    const ghostBotSize = settings.ghostBotSize || 30;
+    document.documentElement.style.setProperty('--ghost-bot-size', `${ghostBotSize}px`);
+    const ghostBotSizeSlider = document.getElementById('ghostBotSizeSlider');
+    const ghostBotSizeValue = document.getElementById('ghostBotSizeValue');
+    if (ghostBotSizeSlider) ghostBotSizeSlider.value = ghostBotSize;
+    if (ghostBotSizeValue) ghostBotSizeValue.textContent = `${ghostBotSize}px`;
+
     // Apply search engine
     if (searchEngine) searchEngine.value = settings.searchEngine;
 
@@ -145,9 +157,25 @@
     const recentBar = document.getElementById('recentBar');
     if (recentBar) {
       recentBar.style.display = settings.showRecentBar ? 'block' : 'none';
+      if (settings.recentBarCollapsed) {
+        recentBar.classList.add('collapsed');
+      } else {
+        recentBar.classList.remove('collapsed');
+      }
     }
     const showRecentBarCheckbox = document.getElementById('showRecentBar');
     if (showRecentBarCheckbox) showRecentBarCheckbox.checked = settings.showRecentBar;
+
+    // Apply username
+    const userNameInput = document.getElementById('userNameInput');
+    if (userNameInput) userNameInput.value = settings.userName || '';
+
+    // Apply live wallpaper
+    const liveWallpaperSelect = document.getElementById('liveWallpaperSelect');
+    if (liveWallpaperSelect) liveWallpaperSelect.value = settings.liveWallpaper || 'none';
+    if (settings.liveWallpaper && settings.liveWallpaper !== 'none') {
+      startLiveWallpaper(settings.liveWallpaper);
+    }
 
     // Apply compact pinned items
     const pinnedItemsCompactCheckbox = document.getElementById('pinnedItemsCompact');
@@ -286,6 +314,52 @@
   }
   updateClock();
   setInterval(updateClock, 1000);
+
+  // Personalized Greeting
+  function updateGreeting() {
+    const greetingText = document.getElementById('greetingText');
+    const greetingEmoji = document.getElementById('greetingEmoji');
+    if (!greetingText || !greetingEmoji) return;
+
+    const now = new Date();
+    const hour = now.getHours();
+    const month = now.getMonth();
+    const day = now.getDate();
+    const settings = getSettings();
+    const name = settings.userName ? `, ${settings.userName}` : '';
+
+    let greeting, emoji;
+
+    // Special day greetings
+    if (month === 0 && day === 1) {
+      greeting = `Happy New Year${name}!`;
+      emoji = '🎉';
+    } else if (month === 11 && day === 25) {
+      greeting = `Merry Christmas${name}!`;
+      emoji = '🎄';
+    } else if (month === 9 && day === 31) {
+      greeting = `Happy Halloween${name}!`;
+      emoji = '🎃';
+    } else if (hour >= 5 && hour < 12) {
+      greeting = `Good morning${name}`;
+      emoji = '🌤️';
+    } else if (hour >= 12 && hour < 17) {
+      greeting = `Good afternoon${name}`;
+      emoji = '☀️';
+    } else if (hour >= 17 && hour < 21) {
+      greeting = `Good evening${name}`;
+      emoji = '🌅';
+    } else {
+      greeting = `Good night${name}`;
+      emoji = '🌙';
+    }
+
+    greetingText.textContent = greeting;
+    greetingEmoji.textContent = emoji;
+  }
+
+  updateGreeting();
+  setInterval(updateGreeting, 60000);
 
   // Weather
   function weatherCodeToIcon(code) {
@@ -748,6 +822,17 @@
     });
   }
 
+  // Username input
+  const userNameInput = document.getElementById('userNameInput');
+  if (userNameInput) {
+    userNameInput.addEventListener('input', (e) => {
+      const settings = getSettings();
+      settings.userName = e.target.value.trim();
+      saveSettings(settings);
+      updateGreeting();
+    });
+  }
+
   // Compact Pinned Items Toggle
   const pinnedItemsCompactCheckbox = document.getElementById('pinnedItemsCompact');
   if (pinnedItemsCompactCheckbox) {
@@ -947,9 +1032,9 @@
 
     ghostBot.addEventListener('dblclick', (e) => {
       e.preventDefault();
-      const isAtBottom = ghostY > window.innerHeight - 100;
+      const botAtBottom = ghostY > window.innerHeight - 100;
 
-      if (isAtBottom && !isFollowing) {
+      if (botAtBottom && !isFollowing) {
         isFollowing = true;
         isFalling = false;
         isAtBottom = false;
@@ -967,6 +1052,22 @@
       }
     });
 
+    // Allow dblclick even when click-through is enabled
+    document.addEventListener('dblclick', (e) => {
+      if (!ghostBot.classList.contains('click-through-enabled')) return;
+      const rect = ghostBot.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (dist < Math.max(rect.width, 40)) {
+        ghostBot.dispatchEvent(new MouseEvent('dblclick', {
+          clientX: e.clientX,
+          clientY: e.clientY,
+          bubbles: false
+        }));
+      }
+    });
+
     window.addEventListener('mouseleave', () => {
       if (isFollowing) {
         isVisible = false;
@@ -977,6 +1078,20 @@
     });
 
     animateGhostBot();
+  }
+
+  // Ghost bot size slider
+  const ghostBotSizeSlider = document.getElementById('ghostBotSizeSlider');
+  if (ghostBotSizeSlider) {
+    ghostBotSizeSlider.addEventListener('input', (e) => {
+      const size = parseInt(e.target.value);
+      document.documentElement.style.setProperty('--ghost-bot-size', `${size}px`);
+      const sizeLabel = document.getElementById('ghostBotSizeValue');
+      if (sizeLabel) sizeLabel.textContent = `${size}px`;
+      const settings = getSettings();
+      settings.ghostBotSize = size;
+      saveSettings(settings);
+    });
   }
 
   // Initial render
@@ -1003,44 +1118,44 @@
   // Color customization
   const colorPresets = {
     default: {
-      primaryBg: '#114b5f',
-      secondaryBg: '#028090',
-      cardBg: '#114b5f',
-      primaryText: '#e4fde1',
-      secondaryText: '#456990',
-      accent: '#028090',
-      buttonPrimary: '#028090',
-      buttonSecondary: '#456990'
+      primaryBg: '#1a2332',
+      secondaryBg: '#3b82f6',
+      cardBg: '#1e293b',
+      primaryText: '#f1f5f9',
+      secondaryText: '#94a3b8',
+      accent: '#3b82f6',
+      buttonPrimary: '#3b82f6',
+      buttonSecondary: '#64748b'
     },
     warm: {
-      primaryBg: '#8B4513',
-      secondaryBg: '#D2691E',
-      cardBg: '#A0522D',
-      primaryText: '#FFF8DC',
-      secondaryText: '#DEB887',
-      accent: '#FF6347',
-      buttonPrimary: '#FF6347',
-      buttonSecondary: '#D2691E'
+      primaryBg: '#451a03',
+      secondaryBg: '#ea580c',
+      cardBg: '#7c2d12',
+      primaryText: '#fef3c7',
+      secondaryText: '#fdba74',
+      accent: '#f97316',
+      buttonPrimary: '#ea580c',
+      buttonSecondary: '#c2410c'
     },
     cool: {
-      primaryBg: '#1E3A8A',
-      secondaryBg: '#3B82F6',
-      cardBg: '#1E40AF',
-      primaryText: '#DBEAFE',
-      secondaryText: '#93C5FD',
-      accent: '#60A5FA',
-      buttonPrimary: '#3B82F6',
-      buttonSecondary: '#2563EB'
+      primaryBg: '#0c1929',
+      secondaryBg: '#2563eb',
+      cardBg: '#172554',
+      primaryText: '#dbeafe',
+      secondaryText: '#93c5fd',
+      accent: '#60a5fa',
+      buttonPrimary: '#2563eb',
+      buttonSecondary: '#1d4ed8'
     },
     dark: {
-      primaryBg: '#0a0a0a',
-      secondaryBg: '#1a1a1a',
-      cardBg: '#0f0f0f',
-      primaryText: '#ffffff',
-      secondaryText: '#888888',
-      accent: '#ffffff',
-      buttonPrimary: '#333333',
-      buttonSecondary: '#1a1a1a'
+      primaryBg: '#09090b',
+      secondaryBg: '#18181b',
+      cardBg: '#0f0f12',
+      primaryText: '#fafafa',
+      secondaryText: '#71717a',
+      accent: '#a1a1aa',
+      buttonPrimary: '#27272a',
+      buttonSecondary: '#18181b'
     }
   };
 
@@ -1242,6 +1357,9 @@
   const originalRenderRecentItems = renderRecentItems;
   renderRecentItems = function () {
     if (!recentItems) return;
+
+    const recentCount = document.getElementById('recentCount');
+    if (recentCount) recentCount.textContent = recentHistory.length;
 
     if (recentHistory.length === 0) {
       recentItems.innerHTML = '<div style="color: var(--text-soft); font-size: 13px;">No recent items</div>';
@@ -1485,5 +1603,281 @@
       }
     });
   }
+
+  // === Clear All recent items ===
+  const recentClearAll = document.getElementById('recentClearAll');
+  if (recentClearAll) {
+    recentClearAll.addEventListener('click', () => {
+      recentHistory = [];
+      localStorage.setItem('recentHistory', JSON.stringify(recentHistory));
+      renderRecentItems();
+    });
+  }
+
+  // === Collapsible recent bar ===
+  const recentCollapseBtn = document.getElementById('recentCollapseBtn');
+  if (recentCollapseBtn) {
+    recentCollapseBtn.addEventListener('click', () => {
+      const recentBar = document.getElementById('recentBar');
+      if (!recentBar) return;
+      const isCollapsed = recentBar.classList.toggle('collapsed');
+      const settings = getSettings();
+      settings.recentBarCollapsed = isCollapsed;
+      saveSettings(settings);
+    });
+  }
+
+  // === Live Wallpaper Engine ===
+  let liveWallpaperAnimId = null;
+  const lwCanvas = document.getElementById('liveWallpaperCanvas');
+  let lwCtx = lwCanvas ? lwCanvas.getContext('2d') : null;
+
+  function resizeLWCanvas() {
+    if (!lwCanvas) return;
+    lwCanvas.width = window.innerWidth;
+    lwCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeLWCanvas);
+  resizeLWCanvas();
+
+  function stopLiveWallpaper() {
+    if (liveWallpaperAnimId) {
+      cancelAnimationFrame(liveWallpaperAnimId);
+      liveWallpaperAnimId = null;
+    }
+    if (lwCanvas) {
+      lwCanvas.classList.remove('active');
+      if (lwCtx) lwCtx.clearRect(0, 0, lwCanvas.width, lwCanvas.height);
+    }
+  }
+
+  function startLiveWallpaper(type) {
+    stopLiveWallpaper();
+    if (type === 'none' || !lwCanvas || !lwCtx) return;
+    lwCanvas.classList.add('active');
+    resizeLWCanvas();
+    if (type === 'particles') startParticles();
+    else if (type === 'gradient-wave') startGradientWave();
+    else if (type === 'starfield') startStarfield();
+  }
+
+  // --- Particles ---
+  function startParticles() {
+    const particles = [];
+    const count = 80;
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * lwCanvas.width,
+        y: Math.random() * lwCanvas.height,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
+        r: Math.random() * 2.5 + 1,
+        alpha: Math.random() * 0.5 + 0.2
+      });
+    }
+    function draw() {
+      lwCtx.clearRect(0, 0, lwCanvas.width, lwCanvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = lwCanvas.width;
+        if (p.x > lwCanvas.width) p.x = 0;
+        if (p.y < 0) p.y = lwCanvas.height;
+        if (p.y > lwCanvas.height) p.y = 0;
+        lwCtx.beginPath();
+        lwCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        lwCtx.fillStyle = `rgba(59, 130, 246, ${p.alpha})`;
+        lwCtx.fill();
+      });
+      // Draw connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            lwCtx.beginPath();
+            lwCtx.moveTo(particles[i].x, particles[i].y);
+            lwCtx.lineTo(particles[j].x, particles[j].y);
+            lwCtx.strokeStyle = `rgba(59, 130, 246, ${0.15 * (1 - dist / 120)})`;
+            lwCtx.lineWidth = 0.8;
+            lwCtx.stroke();
+          }
+        }
+      }
+      liveWallpaperAnimId = requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  // --- Gradient Wave ---
+  function startGradientWave() {
+    let t = 0;
+    function draw() {
+      const w = lwCanvas.width;
+      const h = lwCanvas.height;
+      lwCtx.clearRect(0, 0, w, h);
+      for (let i = 0; i < 4; i++) {
+        lwCtx.beginPath();
+        const amplitude = 40 + i * 15;
+        const yOffset = h * 0.35 + i * (h * 0.12);
+        const freq = 0.003 + i * 0.001;
+        const speed = t * (0.8 + i * 0.3);
+        lwCtx.moveTo(0, yOffset);
+        for (let x = 0; x <= w; x += 4) {
+          const y = yOffset + Math.sin(x * freq + speed) * amplitude
+            + Math.sin(x * freq * 1.5 + speed * 0.7) * (amplitude * 0.4);
+          lwCtx.lineTo(x, y);
+        }
+        lwCtx.lineTo(w, h);
+        lwCtx.lineTo(0, h);
+        lwCtx.closePath();
+        const colors = [
+          `rgba(59, 130, 246, ${0.08 + i * 0.03})`,
+          `rgba(100, 116, 139, ${0.06 + i * 0.02})`,
+          `rgba(96, 165, 250, ${0.04 + i * 0.015})`,
+          `rgba(241, 245, 249, ${0.03 + i * 0.01})`
+        ];
+        lwCtx.fillStyle = colors[i];
+        lwCtx.fill();
+      }
+      t += 0.015;
+      liveWallpaperAnimId = requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  // --- Starfield ---
+  function startStarfield() {
+    const stars = [];
+    const count = 250;
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * lwCanvas.width - lwCanvas.width / 2,
+        y: Math.random() * lwCanvas.height - lwCanvas.height / 2,
+        z: Math.random() * lwCanvas.width,
+        pz: 0
+      });
+    }
+    function draw() {
+      const w = lwCanvas.width;
+      const h = lwCanvas.height;
+      lwCtx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+      lwCtx.fillRect(0, 0, w, h);
+      const cx = w / 2;
+      const cy = h / 2;
+      stars.forEach(star => {
+        star.pz = star.z;
+        star.z -= 2;
+        if (star.z <= 0) {
+          star.x = Math.random() * w - cx;
+          star.y = Math.random() * h - cy;
+          star.z = w;
+          star.pz = star.z;
+        }
+        const sx = (star.x / star.z) * w * 0.4 + cx;
+        const sy = (star.y / star.z) * h * 0.4 + cy;
+        const px = (star.x / star.pz) * w * 0.4 + cx;
+        const py = (star.y / star.pz) * h * 0.4 + cy;
+        const size = Math.max(0, (1 - star.z / w) * 3);
+        const alpha = Math.max(0, (1 - star.z / w));
+        lwCtx.beginPath();
+        lwCtx.moveTo(px, py);
+        lwCtx.lineTo(sx, sy);
+        lwCtx.strokeStyle = `rgba(203, 213, 225, ${alpha * 0.7})`;
+        lwCtx.lineWidth = size;
+        lwCtx.stroke();
+        lwCtx.beginPath();
+        lwCtx.arc(sx, sy, size * 0.5, 0, Math.PI * 2);
+        lwCtx.fillStyle = `rgba(203, 213, 225, ${alpha})`;
+        lwCtx.fill();
+      });
+      liveWallpaperAnimId = requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  // Live wallpaper select handler
+  const liveWallpaperSelect = document.getElementById('liveWallpaperSelect');
+  if (liveWallpaperSelect) {
+    liveWallpaperSelect.addEventListener('change', (e) => {
+      const value = e.target.value;
+      const settings = getSettings();
+      settings.liveWallpaper = value;
+      saveSettings(settings);
+      startLiveWallpaper(value);
+    });
+  }
+
+  // === Water Ripple Effect on Click ===
+  const ripples = [];
+  let rippleAnimId = null;
+  const rippleCanvas = document.createElement('canvas');
+  rippleCanvas.id = 'rippleCanvas';
+  rippleCanvas.style.cssText = 'position:fixed;inset:0;z-index:1;pointer-events:none;';
+  document.body.appendChild(rippleCanvas);
+  const rippleCtx = rippleCanvas.getContext('2d');
+
+  function resizeRippleCanvas() {
+    rippleCanvas.width = window.innerWidth;
+    rippleCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeRippleCanvas);
+  resizeRippleCanvas();
+
+  document.addEventListener('click', (e) => {
+    // Don't trigger on interactive elements
+    if (e.target.closest('a, button, input, select, textarea, .card, .modal, .settings, .icon-btn, .recent-item, .pinned-item, .search')) return;
+    ripples.push({
+      x: e.clientX,
+      y: e.clientY,
+      radius: 0,
+      maxRadius: 280,
+      alpha: 0.5,
+      lineWidth: 3,
+      speed: 4
+    });
+    // Also add a couple of trailing ripples
+    setTimeout(() => ripples.push({ x: e.clientX, y: e.clientY, radius: 0, maxRadius: 200, alpha: 0.3, lineWidth: 2, speed: 3 }), 80);
+    setTimeout(() => ripples.push({ x: e.clientX, y: e.clientY, radius: 0, maxRadius: 140, alpha: 0.2, lineWidth: 1.5, speed: 2.5 }), 180);
+    if (!rippleAnimId) animateRipples();
+  });
+
+  function animateRipples() {
+    rippleCtx.clearRect(0, 0, rippleCanvas.width, rippleCanvas.height);
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const r = ripples[i];
+      r.radius += r.speed;
+      r.alpha -= 0.008;
+      if (r.alpha <= 0 || r.radius >= r.maxRadius) {
+        ripples.splice(i, 1);
+        continue;
+      }
+      // Main ring
+      rippleCtx.beginPath();
+      rippleCtx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+      rippleCtx.strokeStyle = `rgba(59, 130, 246, ${r.alpha})`;
+      rippleCtx.lineWidth = r.lineWidth * (1 - r.radius / r.maxRadius) + 0.5;
+      rippleCtx.stroke();
+      // Inner glow
+      if (r.radius < r.maxRadius * 0.6) {
+        const grad = rippleCtx.createRadialGradient(r.x, r.y, 0, r.x, r.y, r.radius);
+        grad.addColorStop(0, `rgba(59, 130, 246, ${r.alpha * 0.08})`);
+        grad.addColorStop(0.7, `rgba(96, 165, 250, ${r.alpha * 0.04})`);
+        grad.addColorStop(1, 'transparent');
+        rippleCtx.beginPath();
+        rippleCtx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+        rippleCtx.fillStyle = grad;
+        rippleCtx.fill();
+      }
+    }
+    if (ripples.length > 0) {
+      rippleAnimId = requestAnimationFrame(animateRipples);
+    } else {
+      rippleAnimId = null;
+      rippleCtx.clearRect(0, 0, rippleCanvas.width, rippleCanvas.height);
+    }
+  }
+
 })();
 

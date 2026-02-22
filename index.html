@@ -5,12 +5,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>My Brave Home</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
+    <canvas id="liveWallpaperCanvas" class="live-wallpaper-canvas"></canvas>
     <!-- Top bar with Gmail and Settings -->
     <div class="top-bar">
         <div class="top-bar-left">
@@ -31,6 +32,12 @@
 
     <div class="app">
         <main class="container">
+            <!-- Personalized Greeting -->
+            <div class="greeting-section" id="greetingSection">
+                <span class="greeting-emoji" id="greetingEmoji">🌤️</span>
+                <span class="greeting-text" id="greetingText">Good morning</span>
+            </div>
+
             <form id="searchForm" action="https://www.google.com/search" method="get" class="search" role="search">
                 <div class="search-input-wrapper">
                     <div class="search-input">
@@ -62,9 +69,21 @@
 
             <section class="recent-bar" id="recentBar">
                 <div class="recent-bar-header">
-                    <span class="recent-title">Recent & Pinned</span>
+                    <div class="recent-header-left">
+                        <button class="recent-collapse-btn" id="recentCollapseBtn" title="Collapse">
+                            <span class="material-icons">expand_more</span>
+                        </button>
+                        <span class="recent-title">Recent & Pinned</span>
+                        <span class="recent-count" id="recentCount">0</span>
+                    </div>
+                    <button class="recent-clear-btn" id="recentClearAll" title="Clear All">
+                        <span class="material-icons" style="font-size:16px;">delete_sweep</span>
+                        <span>Clear All</span>
+                    </button>
                 </div>
-                <div class="recent-items" id="recentItems"></div>
+                <div class="recent-items-wrapper" id="recentItemsWrapper">
+                    <div class="recent-items" id="recentItems"></div>
+                </div>
             </section>
 
             <section class="grid" id="shortcutsGrid">
@@ -255,6 +274,18 @@
                 </div>
 
                 <div class="setting-group">
+                    <label class="setting-label">Live Wallpaper</label>
+                    <div class="live-wallpaper-controls">
+                        <select id="liveWallpaperSelect" class="search-engine-select" style="width:100%;">
+                            <option value="none">None</option>
+                            <option value="particles">✨ Particles</option>
+                            <option value="gradient-wave">🌊 Gradient Wave</option>
+                            <option value="starfield">🌌 Starfield</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="setting-group">
                     <label class="setting-label toggle-label">
                         <span>Sync with Wallpaper (Overrides Custom)</span>
                         <label class="toggle-switch">
@@ -282,6 +313,11 @@
             </div>
 
             <div class="setting-group">
+                <label class="setting-label">Ghost Bot Size: <span id="ghostBotSizeValue">30px</span></label>
+                <input type="range" id="ghostBotSizeSlider" min="20" max="80" value="30" class="setting-slider">
+            </div>
+
+            <div class="setting-group">
                 <label class="setting-label toggle-label">
                     <span>Show Recent Bar</span>
                     <label class="toggle-switch">
@@ -299,6 +335,12 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </label>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">Your Name</label>
+                <input type="text" id="userNameInput" placeholder="Enter your name"
+                    style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); background: rgba(17, 75, 95, 0.4); color: var(--text); font-size: 14px; outline: none;">
             </div>
 
             <div class="setting-group">
