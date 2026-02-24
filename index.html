@@ -12,6 +12,7 @@
 
 <body>
     <canvas id="liveWallpaperCanvas" class="live-wallpaper-canvas"></canvas>
+    <video id="liveWallpaperVideo" class="live-wallpaper-video" muted loop playsinline></video>
     <!-- Top bar with Gmail and Settings -->
     <div class="top-bar">
         <div class="top-bar-left">
@@ -281,7 +282,21 @@
                             <option value="particles">✨ Particles</option>
                             <option value="gradient-wave">🌊 Gradient Wave</option>
                             <option value="starfield">🌌 Starfield</option>
+                            <option value="custom">🎬 Custom Video</option>
                         </select>
+                    </div>
+                    <div class="custom-live-wallpaper-controls" id="customLiveWallpaperControls"
+                        style="margin-top: 10px; display: none;">
+                        <label for="liveWallpaperUpload" class="btn secondary"
+                            style="cursor: pointer; width: 100%; text-align: center; display: block;">
+                            Upload Video File
+                            <input type="file" id="liveWallpaperUpload" accept="video/*" style="display: none;">
+                        </label>
+                        <div id="customLiveWallpaperStatus"
+                            style="font-size: 12px; color: var(--text-soft); margin-top: 6px;"></div>
+                        <button id="clearCustomLiveWallpaper" class="btn"
+                            style="background: var(--danger); color: white; margin-top: 8px; width: 100%; display: none;">Clear
+                            Custom Wallpaper</button>
                     </div>
                 </div>
 
@@ -305,11 +320,15 @@
                     </label>
                 </div>
 
-                <label class="toggle-switch">
-                    <input type="checkbox" id="ghostBotClickThrough">
-                    <span class="toggle-slider"></span>
-                </label>
-                </label>
+                <div class="setting-group">
+                    <label class="setting-label toggle-label">
+                        <span>Ghost Bot Click Through</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ghostBotClickThrough">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </label>
+                </div>
             </div>
 
             <div class="setting-group">
