@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   // DOM Elements
   const q = document.getElementById('q');
   const clockTime = document.getElementById('clockTime');
@@ -46,6 +46,8 @@
   let recentHistory = [];
   let pinnedItemsList = [];
   let currentEditingPin = null;
+  let clockInterval = null;
+  let liveWallpaperAnimId = null;
 
   // Settings with localStorage
   const defaultSettings = {
@@ -326,7 +328,6 @@
   });
 
   // Clock - 12 hour format with error recovery
-  let clockInterval = null;
   function updateClock() {
     try {
       // Re-query DOM elements in case they were removed/recreated
@@ -366,20 +367,60 @@
   // Initialize clock with error handling
   function initClock() {
     try {
+      // Verify elements exist before proceeding
+      const clockTimeEl = document.getElementById('clockTime');
+      const clockDateEl = document.getElementById('clockDate');
+      
+      if (!clockTimeEl || !clockDateEl) {
+        console.warn('Clock elements not found during init, will retry...');
+        // Retry after a short delay
+        setTimeout(initClock, 200);
+        return;
+      }
+      
+      // Update immediately
       updateClock();
-      if (clockInterval) clearInterval(clockInterval);
+      
+      // Clear any existing interval
+      if (clockInterval) {
+        clearInterval(clockInterval);
+        clockInterval = null;
+      }
+      
+      // Start interval
       clockInterval = setInterval(updateClock, 1000);
+      console.log('Clock initialized successfully');
     } catch (error) {
       console.error('Clock initialization error:', error);
+      // Retry after error
+      setTimeout(initClock, 1000);
     }
   }
   
-  // Start clock when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initClock);
-  } else {
-    initClock();
+  // Start clock when DOM is ready - use multiple strategies to ensure it runs
+  function ensureClockStarts() {
+    // Strategy 1: If DOM is already ready
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      // Use setTimeout to ensure DOM is fully parsed
+      setTimeout(initClock, 50);
+    } else {
+      // Strategy 2: Wait for DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initClock, 50);
+      });
+    }
+    
+    // Strategy 3: Fallback - check after a delay regardless
+    setTimeout(() => {
+      const clockTimeEl = document.getElementById('clockTime');
+      if (clockTimeEl && (clockTimeEl.textContent === '--:--:--' || !clockTimeEl.textContent)) {
+        console.log('Clock still not initialized, forcing init...');
+        initClock();
+      }
+    }, 500);
   }
+  
+  ensureClockStarts();
 
   // Personalized Greeting
   function updateGreeting() {
@@ -787,9 +828,14 @@
       const closeSettingsEl = document.getElementById('closeSettings');
       
       if (settingsBtnEl) {
+        // Mark as initialized
+        settingsBtnEl.setAttribute('data-initialized', 'true');
+        
         // Remove existing listeners to prevent duplicates
         const newBtn = settingsBtnEl.cloneNode(true);
+        newBtn.setAttribute('data-initialized', 'true');
         settingsBtnEl.parentNode.replaceChild(newBtn, settingsBtnEl);
+        
         newBtn.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -829,12 +875,27 @@
     }
   }
   
-  // Initialize settings modal when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSettingsModal);
-  } else {
-    initSettingsModal();
+  // Initialize settings modal when DOM is ready - use same robust pattern as clock
+  function ensureSettingsModalStarts() {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(initSettingsModal, 50);
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initSettingsModal, 50);
+      });
+    }
+    
+    // Fallback check
+    setTimeout(() => {
+      const settingsBtnEl = document.getElementById('settingsBtn');
+      if (settingsBtnEl && settingsBtnEl.getAttribute('data-initialized') !== 'true') {
+        console.log('Settings button not initialized, forcing init...');
+        initSettingsModal();
+      }
+    }, 500);
   }
+  
+  ensureSettingsModalStarts();
 
   // Theme buttons
   themeBtns.forEach(btn => {
@@ -1210,16 +1271,28 @@
     try {
       // Check if clock is still working
       const clockTimeEl = document.getElementById('clockTime');
-      if (clockTimeEl && !clockTimeEl.textContent || clockTimeEl.textContent === '--:--:--') {
-        console.log('Clock appears stuck, reinitializing...');
-        initClock();
+      if (clockTimeEl) {
+        const timeText = clockTimeEl.textContent || '';
+        if (timeText === '--:--:--' || timeText === '' || timeText.length < 8) {
+          console.log('Clock appears stuck, reinitializing...');
+          initClock();
+        }
+      } else {
+        // Element doesn't exist, try to initialize
+        console.log('Clock element missing, attempting to initialize...');
+        ensureClockStarts();
       }
       
       // Check if settings button is still functional
       const settingsBtnEl = document.getElementById('settingsBtn');
-      if (settingsBtnEl && !settingsBtnEl.onclick) {
-        console.log('Settings button appears broken, reinitializing...');
-        initSettingsModal();
+      if (settingsBtnEl) {
+        // Check if button has click handlers by testing if it responds
+        const hasListeners = settingsBtnEl.onclick !== null || 
+                            settingsBtnEl.getAttribute('data-initialized') === 'true';
+        if (!hasListeners) {
+          console.log('Settings button appears broken, reinitializing...');
+          initSettingsModal();
+        }
       }
     } catch (error) {
       console.error('Health check error:', error);
@@ -1757,7 +1830,6 @@
   }
 
   // === Live Wallpaper Engine ===
-  let liveWallpaperAnimId = null;
   const lwCanvas = document.getElementById('liveWallpaperCanvas');
   let lwCtx = lwCanvas ? lwCanvas.getContext('2d') : null;
 
