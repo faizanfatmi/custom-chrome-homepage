@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   // DOM Elements
   const q = document.getElementById('q');
   const clockTime = document.getElementById('clockTime');
@@ -46,8 +46,6 @@
   let recentHistory = [];
   let pinnedItemsList = [];
   let currentEditingPin = null;
-  let clockInterval = null;
-  let liveWallpaperAnimId = null;
 
   // Settings with localStorage
   const defaultSettings = {
@@ -67,13 +65,18 @@
     recentBarCollapsed: false,
     liveWallpaper: 'none',
     userName: '',
-    ghostBotSize: 30,
-    customVideoUrl: null
+    ghostBotSize: 30
   };
 
   function getSettings() {
-    const stored = localStorage.getItem('homepageSettings');
-    return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
+    try {
+      const stored = localStorage.getItem('homepageSettings');
+      return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
+    } catch (e) {
+      console.warn('Settings corrupted, resetting to defaults', e);
+      localStorage.removeItem('homepageSettings');
+      return defaultSettings;
+    }
   }
 
   function saveSettings(settings) {
@@ -176,13 +179,6 @@
     // Apply live wallpaper
     const liveWallpaperSelect = document.getElementById('liveWallpaperSelect');
     if (liveWallpaperSelect) liveWallpaperSelect.value = settings.liveWallpaper || 'none';
-    
-    // Show/hide custom video controls
-    const customControls = document.getElementById('customLiveWallpaperControls');
-    if (customControls) {
-      customControls.style.display = (settings.liveWallpaper === 'custom') ? 'block' : 'none';
-    }
-    
     if (settings.liveWallpaper && settings.liveWallpaper !== 'none') {
       startLiveWallpaper(settings.liveWallpaper);
     }
@@ -286,25 +282,6 @@
     brave: 'https://search.brave.com/search?q='
   };
 
-  // Global error handler to prevent silent failures
-  window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error);
-    // Try to recover critical functions
-    if (event.error && event.error.message && event.error.message.includes('clock')) {
-      setTimeout(initClock, 1000);
-    }
-  });
-  
-  // Handle page visibility changes (tab switching)
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      // Restart clock when page becomes visible
-      initClock();
-      // Refresh weather
-      getAndFetchWeather();
-    }
-  });
-  
   // Initialize
   loadSettings();
   q && q.focus();
@@ -327,100 +304,22 @@
     }
   });
 
-  // Clock - 12 hour format with error recovery
+  // Clock - 12 hour format
   function updateClock() {
-    try {
-      // Re-query DOM elements in case they were removed/recreated
-      const clockTimeEl = document.getElementById('clockTime');
-      const clockDateEl = document.getElementById('clockDate');
-      
-      if (!clockTimeEl || !clockDateEl) {
-        console.warn('Clock elements not found, attempting to recover...');
-        // Try to recover by re-querying after a short delay
-        setTimeout(() => {
-          const recoveredTime = document.getElementById('clockTime');
-          const recoveredDate = document.getElementById('clockDate');
-          if (recoveredTime && recoveredDate) {
-            updateClock();
-          }
-        }, 100);
-        return;
-      }
-      
-      const now = new Date();
-      let hours = now.getHours();
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12;
-      const hh = String(hours).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      const ss = String(now.getSeconds()).padStart(2, '0');
-      
-      clockTimeEl.textContent = `${hh}:${mm}:${ss} ${ampm}`;
-      const opts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-      clockDateEl.textContent = now.toLocaleDateString(undefined, opts);
-    } catch (error) {
-      console.error('Clock update error:', error);
-    }
+    const now = new Date();
+    let hours = now.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    clockTime && (clockTime.textContent = `${hh}:${mm}:${ss} ${ampm}`);
+    const opts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+    clockDate && (clockDate.textContent = now.toLocaleDateString(undefined, opts));
   }
-  
-  // Initialize clock with error handling
-  function initClock() {
-    try {
-      // Verify elements exist before proceeding
-      const clockTimeEl = document.getElementById('clockTime');
-      const clockDateEl = document.getElementById('clockDate');
-      
-      if (!clockTimeEl || !clockDateEl) {
-        console.warn('Clock elements not found during init, will retry...');
-        // Retry after a short delay
-        setTimeout(initClock, 200);
-        return;
-      }
-      
-      // Update immediately
-      updateClock();
-      
-      // Clear any existing interval
-      if (clockInterval) {
-        clearInterval(clockInterval);
-        clockInterval = null;
-      }
-      
-      // Start interval
-      clockInterval = setInterval(updateClock, 1000);
-      console.log('Clock initialized successfully');
-    } catch (error) {
-      console.error('Clock initialization error:', error);
-      // Retry after error
-      setTimeout(initClock, 1000);
-    }
-  }
-  
-  // Start clock when DOM is ready - use multiple strategies to ensure it runs
-  function ensureClockStarts() {
-    // Strategy 1: If DOM is already ready
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      // Use setTimeout to ensure DOM is fully parsed
-      setTimeout(initClock, 50);
-    } else {
-      // Strategy 2: Wait for DOMContentLoaded
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(initClock, 50);
-      });
-    }
-    
-    // Strategy 3: Fallback - check after a delay regardless
-    setTimeout(() => {
-      const clockTimeEl = document.getElementById('clockTime');
-      if (clockTimeEl && (clockTimeEl.textContent === '--:--:--' || !clockTimeEl.textContent)) {
-        console.log('Clock still not initialized, forcing init...');
-        initClock();
-      }
-    }, 500);
-  }
-  
-  ensureClockStarts();
+  updateClock();
+  setInterval(updateClock, 1000);
 
   // Personalized Greeting
   function updateGreeting() {
@@ -820,82 +719,20 @@
     addShortcutModal.classList.remove('active');
   });
 
-  // Settings modal with error recovery
-  function initSettingsModal() {
-    try {
-      const settingsBtnEl = document.getElementById('settingsBtn');
-      const settingsModalEl = document.getElementById('settingsModal');
-      const closeSettingsEl = document.getElementById('closeSettings');
-      
-      if (settingsBtnEl) {
-        // Mark as initialized
-        settingsBtnEl.setAttribute('data-initialized', 'true');
-        
-        // Remove existing listeners to prevent duplicates
-        const newBtn = settingsBtnEl.cloneNode(true);
-        newBtn.setAttribute('data-initialized', 'true');
-        settingsBtnEl.parentNode.replaceChild(newBtn, settingsBtnEl);
-        
-        newBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          try {
-            const modal = document.getElementById('settingsModal');
-            if (modal) {
-              modal.classList.add('active');
-            }
-          } catch (err) {
-            console.error('Settings modal error:', err);
-          }
-        });
-      }
-      
-      if (closeSettingsEl) {
-        closeSettingsEl.addEventListener('click', () => {
-          try {
-            const modal = document.getElementById('settingsModal');
-            if (modal) {
-              modal.classList.remove('active');
-            }
-          } catch (err) {
-            console.error('Close settings error:', err);
-          }
-        });
-      }
-      
-      if (settingsModalEl) {
-        settingsModalEl.addEventListener('click', (e) => {
-          if (e.target === settingsModalEl) {
-            settingsModalEl.classList.remove('active');
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Settings modal initialization error:', error);
+  // Settings modal
+  settingsBtn && settingsBtn.addEventListener('click', () => {
+    settingsModal.classList.add('active');
+  });
+
+  closeSettings && closeSettings.addEventListener('click', () => {
+    settingsModal.classList.remove('active');
+  });
+
+  settingsModal && settingsModal.addEventListener('click', (e) => {
+    if (e.target === settingsModal) {
+      settingsModal.classList.remove('active');
     }
-  }
-  
-  // Initialize settings modal when DOM is ready - use same robust pattern as clock
-  function ensureSettingsModalStarts() {
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      setTimeout(initSettingsModal, 50);
-    } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(initSettingsModal, 50);
-      });
-    }
-    
-    // Fallback check
-    setTimeout(() => {
-      const settingsBtnEl = document.getElementById('settingsBtn');
-      if (settingsBtnEl && settingsBtnEl.getAttribute('data-initialized') !== 'true') {
-        console.log('Settings button not initialized, forcing init...');
-        initSettingsModal();
-      }
-    }, 500);
-  }
-  
-  ensureSettingsModalStarts();
+  });
 
   // Theme buttons
   themeBtns.forEach(btn => {
@@ -1265,39 +1102,6 @@
 
   // Initial render
   renderRecentItems();
-  
-  // Re-initialize critical components periodically to prevent failures
-  setInterval(() => {
-    try {
-      // Check if clock is still working
-      const clockTimeEl = document.getElementById('clockTime');
-      if (clockTimeEl) {
-        const timeText = clockTimeEl.textContent || '';
-        if (timeText === '--:--:--' || timeText === '' || timeText.length < 8) {
-          console.log('Clock appears stuck, reinitializing...');
-          initClock();
-        }
-      } else {
-        // Element doesn't exist, try to initialize
-        console.log('Clock element missing, attempting to initialize...');
-        ensureClockStarts();
-      }
-      
-      // Check if settings button is still functional
-      const settingsBtnEl = document.getElementById('settingsBtn');
-      if (settingsBtnEl) {
-        // Check if button has click handlers by testing if it responds
-        const hasListeners = settingsBtnEl.onclick !== null || 
-                            settingsBtnEl.getAttribute('data-initialized') === 'true';
-        if (!hasListeners) {
-          console.log('Settings button appears broken, reinitializing...');
-          initSettingsModal();
-        }
-      }
-    } catch (error) {
-      console.error('Health check error:', error);
-    }
-  }, 30000); // Check every 30 seconds
 
 
   // Card size control
@@ -1830,6 +1634,7 @@
   }
 
   // === Live Wallpaper Engine ===
+  let liveWallpaperAnimId = null;
   const lwCanvas = document.getElementById('liveWallpaperCanvas');
   let lwCtx = lwCanvas ? lwCanvas.getContext('2d') : null;
 
@@ -1854,49 +1659,7 @@
 
   function startLiveWallpaper(type) {
     stopLiveWallpaper();
-    if (type === 'none') {
-      // Hide video if it exists
-      const video = document.getElementById('liveWallpaperVideo');
-      if (video) {
-        video.style.display = 'none';
-        video.pause();
-      }
-      return;
-    }
-    
-    // Handle custom video
-    if (type === 'custom') {
-      const video = document.getElementById('liveWallpaperVideo');
-      if (video && video.src) {
-        video.style.display = 'block';
-        video.style.position = 'fixed';
-        video.style.inset = '0';
-        video.style.width = '100%';
-        video.style.height = '100%';
-        video.style.objectFit = 'cover';
-        video.style.zIndex = '-1';
-        video.style.pointerEvents = 'none';
-        video.play().catch(err => console.warn('Video play error:', err));
-        return;
-      } else {
-        console.warn('Custom video not loaded');
-        return;
-      }
-    }
-    
-    // Handle canvas-based wallpapers
-    if (!lwCanvas || !lwCtx) {
-      console.warn('Live wallpaper canvas not available');
-      return;
-    }
-    
-    // Hide video for canvas wallpapers
-    const video = document.getElementById('liveWallpaperVideo');
-    if (video) {
-      video.style.display = 'none';
-      video.pause();
-    }
-    
+    if (type === 'none' || !lwCanvas || !lwCtx) return;
     lwCanvas.classList.add('active');
     resizeLWCanvas();
     if (type === 'particles') startParticles();
@@ -2048,165 +1811,8 @@
       const settings = getSettings();
       settings.liveWallpaper = value;
       saveSettings(settings);
-      
-      // Show/hide custom video controls
-      const customControls = document.getElementById('customLiveWallpaperControls');
-      if (customControls) {
-        customControls.style.display = value === 'custom' ? 'block' : 'none';
-      }
-      
       startLiveWallpaper(value);
     });
-  }
-  
-  // Custom video upload handler
-  const liveWallpaperUpload = document.getElementById('liveWallpaperUpload');
-  const customLiveWallpaperStatus = document.getElementById('customLiveWallpaperStatus');
-  const clearCustomLiveWallpaper = document.getElementById('clearCustomLiveWallpaper');
-  const liveWallpaperVideo = document.getElementById('liveWallpaperVideo');
-  
-  if (liveWallpaperUpload) {
-    liveWallpaperUpload.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      if (!file.type.startsWith('video/')) {
-        if (customLiveWallpaperStatus) {
-          customLiveWallpaperStatus.textContent = 'Please select a video file';
-          customLiveWallpaperStatus.style.color = 'var(--danger)';
-        }
-        return;
-      }
-      
-      // Check file size (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        if (customLiveWallpaperStatus) {
-          customLiveWallpaperStatus.textContent = 'File too large (max 50MB)';
-          customLiveWallpaperStatus.style.color = 'var(--danger)';
-        }
-        return;
-      }
-      
-      if (customLiveWallpaperStatus) {
-        customLiveWallpaperStatus.textContent = 'Loading video...';
-        customLiveWallpaperStatus.style.color = 'var(--text-soft)';
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const videoUrl = event.target.result;
-          
-          // Save to localStorage (as blob URL)
-          const settings = getSettings();
-          settings.customVideoUrl = videoUrl;
-          saveSettings(settings);
-          
-          // Set video source
-          if (liveWallpaperVideo) {
-            liveWallpaperVideo.src = videoUrl;
-            liveWallpaperVideo.onloadeddata = () => {
-              if (customLiveWallpaperStatus) {
-                customLiveWallpaperStatus.textContent = `Loaded: ${file.name}`;
-                customLiveWallpaperStatus.style.color = 'var(--success)';
-              }
-              if (clearCustomLiveWallpaper) {
-                clearCustomLiveWallpaper.style.display = 'block';
-              }
-              
-              // Auto-start if custom is selected
-              const select = document.getElementById('liveWallpaperSelect');
-              if (select && select.value === 'custom') {
-                startLiveWallpaper('custom');
-              }
-            };
-            liveWallpaperVideo.onerror = () => {
-              if (customLiveWallpaperStatus) {
-                customLiveWallpaperStatus.textContent = 'Error loading video';
-                customLiveWallpaperStatus.style.color = 'var(--danger)';
-              }
-            };
-          }
-        } catch (error) {
-          console.error('Video upload error:', error);
-          if (customLiveWallpaperStatus) {
-            customLiveWallpaperStatus.textContent = 'Error: ' + error.message;
-            customLiveWallpaperStatus.style.color = 'var(--danger)';
-          }
-        }
-      };
-      
-      reader.onerror = () => {
-        if (customLiveWallpaperStatus) {
-          customLiveWallpaperStatus.textContent = 'Failed to read file';
-          customLiveWallpaperStatus.style.color = 'var(--danger)';
-        }
-      };
-      
-      reader.readAsDataURL(file);
-    });
-  }
-  
-  // Clear custom wallpaper
-  if (clearCustomLiveWallpaper) {
-    clearCustomLiveWallpaper.addEventListener('click', () => {
-      const settings = getSettings();
-      delete settings.customVideoUrl;
-      saveSettings(settings);
-      
-      if (liveWallpaperVideo) {
-        liveWallpaperVideo.src = '';
-        liveWallpaperVideo.style.display = 'none';
-      }
-      
-      if (liveWallpaperUpload) {
-        liveWallpaperUpload.value = '';
-      }
-      
-      if (customLiveWallpaperStatus) {
-        customLiveWallpaperStatus.textContent = '';
-      }
-      
-      clearCustomLiveWallpaper.style.display = 'none';
-      
-      // Switch to none if custom was selected
-      const select = document.getElementById('liveWallpaperSelect');
-      if (select && select.value === 'custom') {
-        select.value = 'none';
-        settings.liveWallpaper = 'none';
-        saveSettings(settings);
-        startLiveWallpaper('none');
-      }
-    });
-  }
-  
-  // Load saved custom video on page load
-  function loadCustomVideo() {
-    const settings = getSettings();
-    if (settings.customVideoUrl && liveWallpaperVideo) {
-      liveWallpaperVideo.src = settings.customVideoUrl;
-      liveWallpaperVideo.onloadeddata = () => {
-        if (customLiveWallpaperStatus) {
-          customLiveWallpaperStatus.textContent = 'Video loaded';
-          customLiveWallpaperStatus.style.color = 'var(--success)';
-        }
-        if (clearCustomLiveWallpaper) {
-          clearCustomLiveWallpaper.style.display = 'block';
-        }
-        
-        // Auto-start if custom is selected
-        if (settings.liveWallpaper === 'custom') {
-          startLiveWallpaper('custom');
-        }
-      };
-    }
-  }
-  
-  // Load custom video when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadCustomVideo);
-  } else {
-    loadCustomVideo();
   }
 
   // === Water Ripple Effect on Click ===
