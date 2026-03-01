@@ -60,6 +60,7 @@
     ghostBotClickThrough: false,
     customColors: null,
     showRecentBar: true,
+    showGreeting: true,
     pinnedItemsCompact: false,
     weatherLocation: null,
     recentBarCollapsed: false,
@@ -171,6 +172,14 @@
     }
     const showRecentBarCheckbox = document.getElementById('showRecentBar');
     if (showRecentBarCheckbox) showRecentBarCheckbox.checked = settings.showRecentBar;
+
+    // Apply greeting visibility
+    const greetingSection = document.getElementById('greetingSection');
+    if (greetingSection) {
+      greetingSection.style.display = settings.showGreeting !== false ? 'flex' : 'none';
+    }
+    const showGreetingCheckbox = document.getElementById('showGreeting');
+    if (showGreetingCheckbox) showGreetingCheckbox.checked = settings.showGreeting !== false;
 
     // Apply username
     const userNameInput = document.getElementById('userNameInput');
@@ -836,6 +845,20 @@
       settings.userName = e.target.value.trim();
       saveSettings(settings);
       updateGreeting();
+    });
+  }
+
+  // Show Greeting Toggle
+  const showGreetingCheckbox = document.getElementById('showGreeting');
+  if (showGreetingCheckbox) {
+    showGreetingCheckbox.addEventListener('change', (e) => {
+      const settings = getSettings();
+      settings.showGreeting = e.target.checked;
+      saveSettings(settings);
+      const greetingSection = document.getElementById('greetingSection');
+      if (greetingSection) {
+        greetingSection.style.display = e.target.checked ? 'flex' : 'none';
+      }
     });
   }
 
@@ -1655,11 +1678,36 @@
       lwCanvas.classList.remove('active');
       if (lwCtx) lwCtx.clearRect(0, 0, lwCanvas.width, lwCanvas.height);
     }
+    // Also stop video
+    const lwVideo = document.getElementById('liveWallpaperVideo');
+    if (lwVideo) {
+      lwVideo.classList.remove('active');
+      lwVideo.pause();
+      lwVideo.removeAttribute('src');
+      lwVideo.load();
+    }
   }
 
   function startLiveWallpaper(type) {
     stopLiveWallpaper();
-    if (type === 'none' || !lwCanvas || !lwCtx) return;
+    // Hide video when switching to non-custom
+    const lwVideo = document.getElementById('liveWallpaperVideo');
+    if (lwVideo) {
+      lwVideo.classList.remove('active');
+      lwVideo.pause();
+      lwVideo.removeAttribute('src');
+    }
+    if (type === 'none' || !lwCanvas || !lwCtx) {
+      if (type === 'custom') {
+        // Custom video - load from IndexedDB
+        loadCustomLiveWallpaper();
+      }
+      return;
+    }
+    if (type === 'custom') {
+      loadCustomLiveWallpaper();
+      return;
+    }
     lwCanvas.classList.add('active');
     resizeLWCanvas();
     if (type === 'particles') startParticles();
@@ -1805,13 +1853,148 @@
 
   // Live wallpaper select handler
   const liveWallpaperSelect = document.getElementById('liveWallpaperSelect');
+  const customLiveWallpaperControls = document.getElementById('customLiveWallpaperControls');
   if (liveWallpaperSelect) {
+    // Show/hide custom controls on load
+    if (liveWallpaperSelect.value === 'custom' && customLiveWallpaperControls) {
+      customLiveWallpaperControls.style.display = 'block';
+      updateCustomLiveWallpaperStatus();
+    }
     liveWallpaperSelect.addEventListener('change', (e) => {
       const value = e.target.value;
       const settings = getSettings();
       settings.liveWallpaper = value;
       saveSettings(settings);
       startLiveWallpaper(value);
+      // Toggle visibility of custom video upload controls
+      if (customLiveWallpaperControls) {
+        customLiveWallpaperControls.style.display = value === 'custom' ? 'block' : 'none';
+      }
+    });
+  }
+
+  // === IndexedDB helpers for live wallpaper video ===
+  function openLiveWallpaperDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('LiveWallpaperDB', 1);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('videos')) {
+          db.createObjectStore('videos');
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function saveLiveWallpaperVideo(blob) {
+    return openLiveWallpaperDB().then(db => {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('videos', 'readwrite');
+        tx.objectStore('videos').put(blob, 'customVideo');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    });
+  }
+
+  function getLiveWallpaperVideo() {
+    return openLiveWallpaperDB().then(db => {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('videos', 'readonly');
+        const req = tx.objectStore('videos').get('customVideo');
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    });
+  }
+
+  function deleteLiveWallpaperVideo() {
+    return openLiveWallpaperDB().then(db => {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('videos', 'readwrite');
+        tx.objectStore('videos').delete('customVideo');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    });
+  }
+
+  function loadCustomLiveWallpaper() {
+    const lwVideo = document.getElementById('liveWallpaperVideo');
+    if (!lwVideo) return;
+    getLiveWallpaperVideo().then(blob => {
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        lwVideo.src = url;
+        lwVideo.classList.add('active');
+        lwVideo.play().catch(() => { });
+        // Hide canvas if active
+        if (lwCanvas) lwCanvas.classList.remove('active');
+      }
+    }).catch(err => console.warn('Failed to load custom live wallpaper', err));
+  }
+
+  function updateCustomLiveWallpaperStatus() {
+    const statusEl = document.getElementById('customLiveWallpaperStatus');
+    const clearBtn = document.getElementById('clearCustomLiveWallpaper');
+    getLiveWallpaperVideo().then(blob => {
+      if (blob) {
+        const sizeMB = (blob.size / (1024 * 1024)).toFixed(1);
+        if (statusEl) statusEl.textContent = `Video saved (${sizeMB} MB)`;
+        if (clearBtn) clearBtn.style.display = 'block';
+      } else {
+        if (statusEl) statusEl.textContent = 'No video uploaded yet';
+        if (clearBtn) clearBtn.style.display = 'none';
+      }
+    }).catch(() => {
+      if (statusEl) statusEl.textContent = 'Error checking saved video';
+    });
+  }
+
+  // Live wallpaper video upload handler
+  const liveWallpaperUpload = document.getElementById('liveWallpaperUpload');
+  if (liveWallpaperUpload) {
+    liveWallpaperUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById('customLiveWallpaperStatus');
+      if (statusEl) statusEl.textContent = 'Saving video...';
+      saveLiveWallpaperVideo(file).then(() => {
+        if (statusEl) statusEl.textContent = `Saved! (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
+        updateCustomLiveWallpaperStatus();
+        // Auto-play the uploaded video
+        const settings = getSettings();
+        settings.liveWallpaper = 'custom';
+        saveSettings(settings);
+        if (liveWallpaperSelect) liveWallpaperSelect.value = 'custom';
+        startLiveWallpaper('custom');
+      }).catch(err => {
+        console.error('Failed to save live wallpaper video', err);
+        if (statusEl) statusEl.textContent = 'Failed to save video';
+      });
+    });
+  }
+
+  // Clear custom live wallpaper
+  const clearCustomLiveWallpaper = document.getElementById('clearCustomLiveWallpaper');
+  if (clearCustomLiveWallpaper) {
+    clearCustomLiveWallpaper.addEventListener('click', () => {
+      deleteLiveWallpaperVideo().then(() => {
+        const lwVideo = document.getElementById('liveWallpaperVideo');
+        if (lwVideo) {
+          lwVideo.classList.remove('active');
+          lwVideo.pause();
+          lwVideo.removeAttribute('src');
+        }
+        const settings = getSettings();
+        settings.liveWallpaper = 'none';
+        saveSettings(settings);
+        if (liveWallpaperSelect) liveWallpaperSelect.value = 'none';
+        if (customLiveWallpaperControls) customLiveWallpaperControls.style.display = 'none';
+        updateCustomLiveWallpaperStatus();
+      }).catch(err => console.error('Failed to clear live wallpaper', err));
     });
   }
 
