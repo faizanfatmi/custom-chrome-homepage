@@ -61,12 +61,14 @@ body {
 	gap: 14px;
 	margin-bottom: 12px;
 	animation: greetFadeIn .8s ease both;
+	user-select: none;
 }
 
 .greeting-emoji {
 	font-size: 38px;
 	filter: drop-shadow(0 2px 8px rgba(59, 130, 246, 0.35));
 	animation: greetBounce 2s ease infinite;
+	user-select: none;
 }
 
 .greeting-text {
@@ -77,6 +79,7 @@ body {
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
+	user-select: none;
 }
 
 @keyframes greetFadeIn {
