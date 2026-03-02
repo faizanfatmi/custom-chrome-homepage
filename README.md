@@ -1,31 +1,16 @@
-Here’s a more humanized and short version of your README:  
+# React + Vite
 
----
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-# My Brave Home  
+Currently, two official plugins are available:
 
-A fun, modern Brave browser homepage with a playful ghost bot, real-time widgets, and sleek glassmorphism design.  
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## ✨ Highlights  
-- **Ghost Bot**: Follows your cursor, reacts to clicks, and adapts to weather.  
-- **Widgets**: Clock, live weather, quick links, and search bar.  
-- **Design**: Clean, responsive UI with frosted glass effects and smooth animations.  
-- **Lightweight**: Pure HTML, CSS, and vanilla JavaScript—no dependencies.      
+## React Compiler
 
-## 📜 License
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-This project is licensed under the **[GNU General Public License v3.0](LICENSE)**
+## Expanding the ESLint configuration
 
-```
-Copyright (C) 2026 faizanfatmi
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-```
----
-
-**Made with ❤️ to make browsing delightful.**  
-
-Would you like me to make this even shorter—like a *one-paragraph pitch* for GitHub?
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
