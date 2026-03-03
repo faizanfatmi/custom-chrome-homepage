@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import TopBar from './components/TopBar';
 import Greeting from './components/Greeting';
@@ -7,11 +7,13 @@ import RecentBar from './components/RecentBar';
 import PinnedBar from './components/PinnedBar';
 import ShortcutsGrid from './components/ShortcutsGrid';
 import GhostBot from './components/GhostBot';
+import GhostBotGame from './components/GhostBotGame';
 import SettingsModal, { loadSavedWallpaper } from './components/SettingsModal';
 import AddShortcutModal from './components/AddShortcutModal';
 import CustomPinModal from './components/CustomPinModal';
 import LiveWallpaper from './components/LiveWallpaper';
 import RippleEffect from './components/RippleEffect';
+import MusicVisualizer from './components/MusicVisualizer';
 import { useWeather } from './hooks/useWeather';
 
 function AppContent() {
@@ -20,6 +22,8 @@ function AppContent() {
   const [addShortcutOpen, setAddShortcutOpen] = useState(false);
   const [customPinData, setCustomPinData] = useState(null);
   const [fullscreenInfo, setFullscreenInfo] = useState({ network: '--', battery: '--' });
+  const [gameMode, setGameMode] = useState(false);
+  const ghostBotRef = useRef(null);
   const weather = useWeather(settings.weatherLocation);
 
   // Apply theme class to body
@@ -145,11 +149,13 @@ function AppContent() {
           <PinnedBar onEditPin={(index, item) => setCustomPinData({ index, item })} />
           <RecentBar onPin={handlePin} />
           <ShortcutsGrid onAddShortcut={() => setAddShortcutOpen(true)} />
+          <MusicVisualizer />
           <footer className="help">
             Tip: Press <kbd>/</kbd> to focus the search box.
           </footer>
         </main>
-        <GhostBot weatherCode={weather.code} />
+        <GhostBot ref={ghostBotRef} weatherCode={weather.code} gameMode={gameMode} />
+        <GhostBotGame botRef={ghostBotRef} gameMode={gameMode} setGameMode={setGameMode} />
       </div>
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <AddShortcutModal open={addShortcutOpen} onClose={() => setAddShortcutOpen(false)} />
