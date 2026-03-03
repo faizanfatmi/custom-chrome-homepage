@@ -39,11 +39,7 @@ body {
   margin: 0;
   margin-top: 50px;
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: #3a3a3e;
-  background-image:
-    radial-gradient(ellipse at 20% 0%, rgba(160, 160, 170, 0.12), transparent 55%),
-    radial-gradient(ellipse at 80% 100%, rgba(120, 120, 130, 0.08), transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(100, 100, 110, 0.15), transparent 70%);
+  background: #1a1a2e;
   color: var(--text);
   display: flex;
   flex-direction: column;
@@ -915,14 +911,20 @@ body::before {
 .search-engine-select {
   padding: 10px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
   outline: none;
   backdrop-filter: blur(var(--blur-strong));
   transition: all .18s ease;
+}
+
+.search-engine-select option {
+  background: #1e1e2e;
+  color: #d0d0d4;
+  padding: 8px 12px;
 }
 
 .search-engine-select:hover {
@@ -2197,7 +2199,7 @@ select {
   -moz-appearance: none;
   -webkit-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a9aa0' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e4' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 16px;
@@ -2288,8 +2290,7 @@ body.game-active * {
   cursor: crosshair !important;
 }
 
-body.game-active .game-toggle-wrapper,
-body.game-active .game-toggle-wrapper * {
+body.game-active .game-console-btn {
   cursor: pointer !important;
 }
 
@@ -2342,7 +2343,6 @@ body.game-active .game-toggle-wrapper * {
   z-index: 9998;
   animation: scoreSlideIn 0.3s ease;
   overflow: hidden;
-  position: fixed;
 }
 
 .game-score::after {
@@ -2380,91 +2380,103 @@ body.game-active .game-toggle-wrapper * {
   letter-spacing: 0.02em;
 }
 
-.game-toggle-wrapper {
+.game-console-btn {
   position: fixed;
-  bottom: 20px;
-  right: 0;
-  display: flex;
-  align-items: center;
-  z-index: 9998;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.game-toggle-arrow {
-  width: 16px;
-  height: 32px;
+  width: 36px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-right: none;
-  border-radius: 8px 0 0 8px;
-  color: rgba(255, 255, 255, 0.35);
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: none;
-  transition: all 0.2s ease;
-  padding: 0;
-  font-size: 12px;
-}
-
-.game-toggle-arrow:hover {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.08) 100%);
-  color: var(--text);
-}
-
-.game-toggle-btn {
-  padding: 10px 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 600;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.45);
   cursor: pointer;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  white-space: nowrap;
   box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease;
-  transform: translateX(100%);
-  opacity: 0;
-  position: relative;
+    0 2px 12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 9998;
+  padding: 0;
   overflow: hidden;
+  touch-action: none;
+  user-select: none;
 }
 
-.game-toggle-btn::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent);
-  pointer-events: none;
+.game-console-btn.edge-right {
+  border-right: none;
+  border-radius: 10px 0 0 10px;
 }
 
-.game-toggle-wrapper.expanded .game-toggle-btn {
-  transform: translateX(0);
-  opacity: 1;
+.game-console-btn.edge-left {
+  border-left: none;
+  border-radius: 0 10px 10px 0;
 }
 
-.game-toggle-btn:hover {
+.game-console-btn.edge-top {
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  width: 44px;
+  height: 36px;
+}
+
+.game-console-btn.edge-bottom {
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  width: 44px;
+  height: 36px;
+}
+
+.console-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.game-console-btn:hover {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.08) 100%);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.game-toggle-btn.active {
-  background: linear-gradient(180deg, rgba(220, 74, 90, 0.5) 0%, rgba(220, 74, 90, 0.25) 100%);
-  border-color: rgba(220, 74, 90, 0.5);
+.game-console-btn.dragging {
+  background: linear-gradient(180deg, rgba(100, 180, 255, 0.4) 0%, rgba(100, 180, 255, 0.15) 100%);
+  border-color: rgba(100, 180, 255, 0.5);
+  color: white;
   box-shadow:
-    0 4px 14px rgba(220, 74, 90, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    0 0 20px rgba(100, 180, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  scale: 1.15;
+}
+
+.game-console-btn.active {
+  background: linear-gradient(180deg, rgba(220, 74, 90, 0.5) 0%, rgba(220, 74, 90, 0.2) 100%);
+  border-color: rgba(220, 74, 90, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 2px 16px rgba(220, 74, 90, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: consolePulse 2s ease-in-out infinite;
+}
+
+@keyframes consolePulse {
+
+  0%,
+  100% {
+    box-shadow:
+      0 2px 16px rgba(220, 74, 90, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  50% {
+    box-shadow:
+      0 2px 24px rgba(220, 74, 90, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
 }
 
 .ghost-bot--hit {

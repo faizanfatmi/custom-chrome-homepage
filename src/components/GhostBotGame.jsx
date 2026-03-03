@@ -1,18 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+function loadPosition() {
+    try {
+        const saved = localStorage.getItem('gameConsoleBtnPos');
+        if (saved) return JSON.parse(saved);
+    } catch { }
+    return { edge: 'right', percent: 50 };
+}
+
 export default function GhostBotGame({ botRef, gameMode, setGameMode }) {
     const [score, setScore] = useState(0);
-    const [expanded, setExpanded] = useState(false);
     const [bullets, setBullets] = useState([]);
     const bulletIdRef = useRef(0);
-    const collapseTimerRef = useRef(null);
+    const [btnPos, setBtnPos] = useState(loadPosition);
+    const [dragging, setDragging] = useState(false);
+    const [dragPreview, setDragPreview] = useState(null);
+    const longPressRef = useRef(null);
+    const isDraggingRef = useRef(false);
+    const btnRef = useRef(null);
 
     useEffect(() => {
-        if (expanded && !gameMode) {
-            collapseTimerRef.current = setTimeout(() => setExpanded(false), 3000);
-        }
-        return () => clearTimeout(collapseTimerRef.current);
-    }, [expanded, gameMode]);
+        localStorage.setItem('gameConsoleBtnPos', JSON.stringify(btnPos));
+    }, [btnPos]);
 
     useEffect(() => {
         if (!gameMode) {
@@ -56,7 +65,7 @@ export default function GhostBotGame({ botRef, gameMode, setGameMode }) {
 
     const handleShoot = useCallback((e) => {
         if (!gameMode) return;
-        if (e.target.closest('.game-toggle-wrapper')) return;
+        if (e.target.closest('.game-console-btn')) return;
         const bot = botRef.current;
         if (!bot) return;
         const botPos = bot.getPosition();
@@ -85,7 +94,72 @@ export default function GhostBotGame({ botRef, gameMode, setGameMode }) {
         };
     }, [gameMode, handleShoot]);
 
-    const toggleGame = () => {
+    const getNearestEdge = (x, y) => {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const distances = {
+            top: y,
+            bottom: h - y,
+            left: x,
+            right: w - x
+        };
+        let minEdge = 'right';
+        let minDist = Infinity;
+        for (const [edge, dist] of Object.entries(distances)) {
+            if (dist < minDist) { minDist = dist; minEdge = edge; }
+        }
+        let percent;
+        if (minEdge === 'top' || minEdge === 'bottom') {
+            percent = Math.max(5, Math.min(95, (x / w) * 100));
+        } else {
+            percent = Math.max(5, Math.min(95, (y / h) * 100));
+        }
+        return { edge: minEdge, percent };
+    };
+
+    const handlePointerDown = (e) => {
+        const startX = e.clientX;
+        const startY = e.clientY;
+        longPressRef.current = setTimeout(() => {
+            isDraggingRef.current = true;
+            setDragging(true);
+            setDragPreview(getNearestEdge(startX, startY));
+        }, 400);
+    };
+
+    const handlePointerMove = useCallback((e) => {
+        if (!isDraggingRef.current) return;
+        e.preventDefault();
+        setDragPreview(getNearestEdge(e.clientX, e.clientY));
+    }, []);
+
+    const handlePointerUp = useCallback((e) => {
+        clearTimeout(longPressRef.current);
+        if (isDraggingRef.current) {
+            e.stopPropagation();
+            e.preventDefault();
+            const final = getNearestEdge(e.clientX, e.clientY);
+            setBtnPos(final);
+            setDragging(false);
+            setDragPreview(null);
+            isDraggingRef.current = false;
+        }
+    }, []);
+
+    useEffect(() => {
+        if (dragging) {
+            window.addEventListener('pointermove', handlePointerMove);
+            window.addEventListener('pointerup', handlePointerUp);
+            return () => {
+                window.removeEventListener('pointermove', handlePointerMove);
+                window.removeEventListener('pointerup', handlePointerUp);
+            };
+        }
+    }, [dragging, handlePointerMove, handlePointerUp]);
+
+    const handleConsoleClick = (e) => {
+        e.stopPropagation();
+        if (isDraggingRef.current) return;
         if (gameMode) {
             setGameMode(false);
             setScore(0);
@@ -95,16 +169,26 @@ export default function GhostBotGame({ botRef, gameMode, setGameMode }) {
         }
     };
 
-    const handleArrowClick = (e) => {
-        e.stopPropagation();
-        setExpanded(prev => !prev);
-        clearTimeout(collapseTimerRef.current);
+    const handlePointerLeave = () => {
+        if (!isDraggingRef.current) clearTimeout(longPressRef.current);
     };
 
-    const handleGameClick = (e) => {
-        e.stopPropagation();
-        toggleGame();
-        clearTimeout(collapseTimerRef.current);
+    const pos = dragPreview || btnPos;
+
+    const getStyle = () => {
+        const p = `${pos.percent}%`;
+        switch (pos.edge) {
+            case 'right':
+                return { right: 0, top: p, transform: 'translateY(-50%)' };
+            case 'left':
+                return { left: 0, top: p, transform: 'translateY(-50%)' };
+            case 'top':
+                return { top: 0, left: p, transform: 'translateX(-50%)' };
+            case 'bottom':
+                return { bottom: 0, left: p, transform: 'translateX(-50%)' };
+            default:
+                return { right: 0, top: '50%', transform: 'translateY(-50%)' };
+        }
     };
 
     return (
@@ -123,19 +207,22 @@ export default function GhostBotGame({ botRef, gameMode, setGameMode }) {
                 </div>
             )}
 
-            <div className={`game-toggle-wrapper ${expanded ? 'expanded' : ''}`}>
-                <button className="game-toggle-arrow" onClick={handleArrowClick} title="Game">
-                    <span className="material-icons" style={{ fontSize: '16px' }}>
-                        {expanded ? 'chevron_right' : 'chevron_left'}
-                    </span>
-                </button>
-                <button
-                    className={`game-toggle-btn ${gameMode ? 'active' : ''}`}
-                    onClick={handleGameClick}
-                >
-                    🎮 {gameMode ? 'Stop' : 'Game'}
-                </button>
-            </div>
+            <button
+                ref={btnRef}
+                className={`game-console-btn edge-${pos.edge} ${gameMode ? 'active' : ''} ${dragging ? 'dragging' : ''}`}
+                onClick={handleConsoleClick}
+                onPointerDown={handlePointerDown}
+                onPointerLeave={handlePointerLeave}
+                title={gameMode ? 'Stop Game' : 'Play Game (hold to move)'}
+                style={getStyle()}
+            >
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="console-icon">
+                    <path d="M6 11H8V9H10V11H12V13H10V15H8V13H6V11Z" fill="currentColor" />
+                    <circle cx="16" cy="10" r="1" fill="currentColor" />
+                    <circle cx="18" cy="12" r="1" fill="currentColor" />
+                    <path d="M17 4H7C4.24 4 2 6.24 2 9V15C2 17.76 4.24 20 7 20H17C19.76 20 22 17.76 22 15V9C22 6.24 19.76 4 17 4ZM20 15C20 16.65 18.65 18 17 18H7C5.35 18 4 16.65 4 15V9C4 7.35 5.35 6 7 6H17C18.65 6 20 7.35 20 9V15Z" fill="currentColor" />
+                </svg>
+            </button>
         </>
     );
 }

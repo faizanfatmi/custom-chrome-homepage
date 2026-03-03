@@ -12,8 +12,7 @@ export function useClock() {
             hours = hours % 12 || 12;
             const hh = String(hours).padStart(2, '0');
             const mm = String(now.getMinutes()).padStart(2, '0');
-            const ss = String(now.getSeconds()).padStart(2, '0');
-            setTime(`${hh}:${mm}:${ss} ${ampm}`);
+            setTime(`${hh}:${mm} ${ampm}`);
             const opts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
             setDate(now.toLocaleDateString(undefined, opts));
         }
