@@ -463,6 +463,7 @@ export default function SettingsModal({ open, onClose }) {
                     {[
                         ['wallpaperSync', 'Sync with Wallpaper (Overrides Custom)'],
                         ['fullScreen', 'Full Screen Mode'],
+                        ['gameEnabled', 'Game'],
                         ['ghostBotClickThrough', 'Ghost Bot Click Through'],
                         ['showGreeting', 'Show Greeting'],
                         ['showRecentBar', 'Show Recent Bar'],

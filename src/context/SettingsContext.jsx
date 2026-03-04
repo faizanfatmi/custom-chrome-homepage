@@ -20,7 +20,8 @@ const defaultSettings = {
     recentBarCollapsed: false,
     liveWallpaper: 'none',
     userName: '',
-    ghostBotSize: 30
+    ghostBotSize: 30,
+    gameEnabled: true
 };
 
 function loadSettings() {

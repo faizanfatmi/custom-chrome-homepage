@@ -149,13 +149,17 @@ function AppContent() {
           <PinnedBar onEditPin={(index, item) => setCustomPinData({ index, item })} />
           <RecentBar onPin={handlePin} />
           <ShortcutsGrid onAddShortcut={() => setAddShortcutOpen(true)} />
-          <MusicVisualizer />
           <footer className="help">
             Tip: Press <kbd>/</kbd> to focus the search box.
           </footer>
         </main>
-        <GhostBot ref={ghostBotRef} weatherCode={weather.code} gameMode={gameMode} />
-        <GhostBotGame botRef={ghostBotRef} gameMode={gameMode} setGameMode={setGameMode} />
+        <MusicVisualizer />
+        {settings.gameEnabled !== false && (
+          <>
+            <GhostBot ref={ghostBotRef} weatherCode={weather.code} gameMode={gameMode} />
+            <GhostBotGame botRef={ghostBotRef} gameMode={gameMode} setGameMode={setGameMode} />
+          </>
+        )}
       </div>
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <AddShortcutModal open={addShortcutOpen} onClose={() => setAddShortcutOpen(false)} />
