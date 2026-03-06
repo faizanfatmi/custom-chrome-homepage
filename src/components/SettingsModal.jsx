@@ -1,6 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSettings } from '../context/SettingsContext';
 
+// Preinstalled Unsplash wallpapers
+const preinstalledWallpapers = [
+    { id: 'mountain-lake', name: 'Mountain Lake', url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4', credit: 'Samuel Ferrara' },
+    { id: 'northern-lights', name: 'Northern Lights', url: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7', credit: 'Jonatan Pie' },
+    { id: 'ocean-sunset', name: 'Ocean Sunset', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e', credit: 'Sean Oulashin' },
+    { id: 'dark-forest', name: 'Dark Forest', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b', credit: 'Sebastian Unrau' },
+    { id: 'night-sky', name: 'Night Sky', url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba', credit: 'Benjamin Voros' },
+    { id: 'purple-nebula', name: 'Purple Nebula', url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564', credit: 'NASA' },
+    { id: 'cherry-blossom', name: 'Cherry Blossom', url: 'https://images.unsplash.com/photo-1522383225653-ed111181a951', credit: 'AJ' },
+    { id: 'desert-dunes', name: 'Desert Dunes', url: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35', credit: 'Keith Hardy' },
+    { id: 'city-night', name: 'City Night', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390', credit: 'Pedro Lastra' },
+    { id: 'misty-mountains', name: 'Misty Mountains', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b', credit: 'Kalen Emsley' },
+    { id: 'abstract-gradient', name: 'Abstract Gradient', url: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85', credit: 'Codioful' },
+    { id: 'rainy-window', name: 'Rainy Window', url: 'https://images.unsplash.com/photo-1501999635878-71cb5379c2d8', credit: 'Chandler Cruttenden' },
+];
+
 const colorPresets = {
     default: { primaryBg: '#1a2332', secondaryBg: '#3b82f6', cardBg: '#1e293b', primaryText: '#f1f5f9', secondaryText: '#94a3b8', accent: '#3b82f6', buttonPrimary: '#3b82f6', buttonSecondary: '#64748b' },
     warm: { primaryBg: '#451a03', secondaryBg: '#ea580c', cardBg: '#7c2d12', primaryText: '#fef3c7', secondaryText: '#fdba74', accent: '#f97316', buttonPrimary: '#ea580c', buttonSecondary: '#c2410c' },
@@ -381,6 +397,27 @@ export default function SettingsModal({ open, onClose }) {
                                 <span className="wallpaper-status">{wallpaperStatus}</span>
                             </div>
                         )}
+
+                        {/* Preinstalled Wallpapers */}
+                        <div className="preinstalled-wallpapers">
+                            <label className="setting-sublabel">Choose a Wallpaper</label>
+                            <div className="wallpaper-gallery">
+                                {preinstalledWallpapers.map(wp => (
+                                    <button key={wp.id} className="wallpaper-gallery-item"
+                                        title={`${wp.name} — by ${wp.credit}`}
+                                        onClick={() => {
+                                            const fullUrl = `${wp.url}?w=1920&q=80&auto=format&fit=crop`;
+                                            applyWallpaper(fullUrl);
+                                            localStorage.setItem('customWallpaper', fullUrl);
+                                            setWallpaperPreview(fullUrl);
+                                            setWallpaperStatus(`${wp.name}`);
+                                        }}>
+                                        <img src={`${wp.url}?w=400&q=60&auto=format&fit=crop`} alt={wp.name} loading="lazy" />
+                                        <span className="wallpaper-gallery-name">{wp.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
                         {/* URL Input */}
                         <div className="wallpaper-controls">

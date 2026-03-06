@@ -1998,6 +1998,87 @@ body.fullscreen-active .container {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
+/* ===== Preinstalled Wallpaper Gallery ===== */
+
+.preinstalled-wallpapers {
+  margin-bottom: 14px;
+}
+
+.setting-sublabel {
+  display: block;
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+.wallpaper-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  scrollbar-width: thin;
+}
+
+.wallpaper-gallery-item {
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0;
+  transition: all 0.2s ease;
+  aspect-ratio: 16 / 10;
+}
+
+.wallpaper-gallery-item:hover {
+  border-color: var(--primary);
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.wallpaper-gallery-item:active {
+  transform: scale(0.97);
+}
+
+.wallpaper-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.wallpaper-gallery-item:hover img {
+  transform: scale(1.08);
+}
+
+.wallpaper-gallery-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: white;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.wallpaper-gallery-item:hover .wallpaper-gallery-name {
+  opacity: 1;
+}
+
 /* ===== Custom Wallpaper UI ===== */
 
 .wallpaper-preview {
